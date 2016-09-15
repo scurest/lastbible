@@ -1,4 +1,5 @@
 #include "common.hxx"
+#include "lodepng.h"
 
 // The world map is 224x160 tiles. Instead of storing every tile index individually,
 // they're clumped together into groups of 2x2 tiles, called a block4, and then groups
@@ -9,9 +10,9 @@
 // array of 4 indices into the tileset that will exist in VRAM.
 
 struct tile_data {
-  chunks tileset;
-  chunks block4s;
-  chunks block16s;
+  chunks<u8> tileset;
+  chunks<u8> block4s;
+  chunks<u8> block16s;
 };
 
 constexpr usize world_width_tiles = 224;
@@ -62,11 +63,11 @@ auto draw_worldmap(span<u8> rom) -> vec_2d<u8> {
 
 int main(int argc, char** argv) {
   if (argc != 3) {
-    fputs("Usage: worldmap path/to/rom.gb output.png\n", stderr);
+    fputs("Usage: worldmap /path/to/rom.gb out.png", stderr);
     return 1;
   }
 
-  auto rom = read_entire_file(argv[1]);
+  auto rom = read_file(argv[1]);
   auto img = draw_worldmap(rom);
   auto w = img.width;
   auto h = img.height;

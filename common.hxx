@@ -1,12 +1,14 @@
+#pragma once
+
 #include <cassert>
 #include <cstdint>
 #include <cstdio>
+#include <cstring>
 #include <iterator>
 #include <tuple>
+#include <type_traits>
 #include <utility>
 #include <vector>
-
-#include "lodepng.h"
 
 using u8 = std::uint8_t;
 using u16 = std::uint16_t;
@@ -15,7 +17,7 @@ using u64 = std::uint64_t;
 using usize = std::size_t;
 
 
-// arrays and views
+// Arrays and Views
 // ================
 
 /// A view onto a section of an array.
@@ -25,7 +27,10 @@ struct span {
   T* end_;
 
   constexpr span(T* b, T* e) : begin_(b), end_(e) {}
-  span(std::vector<T>& v) : span(v.data(), v.data() + v.size()) {}
+
+  using nonconst_T = typename std::remove_const<T>::type;
+  span(std::vector<nonconst_T>& v) : span(v.data(), v.data() + v.size()) {}
+  span(const std::vector<nonconst_T>& v) : span(v.data(), v.data() + v.size()) {}
 
   constexpr auto begin() const -> T* { return begin_; }
   constexpr auto end() const -> T* { return end_; }
@@ -36,23 +41,28 @@ struct span {
     return begin_[pos];
   }
 
-  constexpr auto slice(usize l_idx, usize r_idx) -> span<T> {
+  constexpr auto slice(usize l_idx, usize r_idx) const -> span<T> {
     return { begin_ + l_idx, begin_ + r_idx };
   }
-};
 
-/// Views an array of bytes as an array of `len` chunks, each of `chunk_size` bytes.
+  constexpr operator span<const T>() const { return { begin_, end_ }; }
+};
+template <class T> using const_span = span<const T>;
+
+/// Views an array as a sequence of len chunks, each of chunk_size elements.
+template <class T>
 struct chunks {
-  u8* start;
+  T* start;
   usize len;
   usize chunk_size;
 
-  constexpr auto operator[](usize pos) const -> span<u8> {
+  constexpr auto operator[](usize pos) const -> span<T> {
     auto begin = start + chunk_size * pos;
     auto end = begin + chunk_size;
     return { begin, end };
   }
 };
+template <class T> using const_chunks = chunks<const T>;
 
 /// A view onto a rectangular region of a 2D array.
 template <class T>
@@ -60,7 +70,7 @@ struct span_2d {
   T* begin;
   usize pitch;
   usize width;
-  usize height;
+  usize heigth;
 
   using index_type = std::pair<usize, usize>;
 
@@ -72,7 +82,10 @@ struct span_2d {
     auto new_begin = begin + y*pitch + x;
     return { new_begin, pitch, w, h};
   }
+
+  constexpr operator span_2d<const T>() const { return { begin, pitch, width, heigth}; }
 };
+template <class T> using const_span_2d = span_2d<const T>;
 
 /// A vector that holds a 2D array.
 template <class T>
@@ -88,26 +101,28 @@ struct vec_2d {
     width = w;
     height = h;
   }
+
   operator span_2d<T>() { return { vec.data(), width, width, height }; }
+  operator const_span_2d<T>() const { return { vec.data(), width, width, height }; }
 };
 
 
 // File I/O
 // ========
 
-auto read_entire_file(const char* filename) -> std::vector<u8> {
+auto read_file(const char* filename) -> std::vector<u8> {
   // I/O streams suck, so just do it the C way.
   auto f = fopen(filename, "rb");
   fseek(f, 0, SEEK_END);
-  auto len = ftell(f);
+  auto len = usize(ftell(f));
   rewind(f);
-  std::vector<u8> out(len);
+  std::vector<u8> out(len); // FIXME: don't leak f if this throws
   fread(out.data(), len, 1, f);
   fclose(f);
   return out;
 }
 
-void write_file(const char* filename, span<u8> bytes) {
+void write_file(const char* filename, const_span<u8> bytes) {
   auto f = fopen(filename, "wb");
   fwrite(bytes.begin(), bytes.size(), 1, f);
   fclose(f);
@@ -120,16 +135,17 @@ void write_file(const char* filename, span<u8> bytes) {
 /// Gets the location in the ROM corresponding to an access to address `addr` while
 /// page `page` is swapped in.
 constexpr auto page_addr(u8 page, u16 addr) -> usize {
-  assert(addr < 0x8000);
   if (addr < 0x4000) return addr;
-  return page * usize(0x4000) + (addr - 0x4000);
+  else if (addr < 0x8000) return page * usize(0x4000) + (addr - 0x4000);
+  else throw "address not in ROM pages";
 }
 
 /// Draws a tile to `rect`.
 /// See eg. http://gbdev.gg8.se/wiki/articles/Video_Display#VRAM_Tile_Data
+/// for the tile format.
 ///
-/// Only the color number (0-3) is written. No palette is taken into account. 
-void draw_tile(span<u8> tile, span_2d<u8> rect) {
+/// Only the color number (0-3) is written. No palette is taken into account.
+void draw_tile(const_span<u8> tile, span_2d<u8> rect) {
   usize idx = 0;
   for (auto y = 0; y != 8; ++y) {
     // data in the ROM is the complement of data in VRAM (idk why)
@@ -164,7 +180,9 @@ struct utf8_str {
     auto len = strlen(s);
     buf.insert(buf.end(), (u8*)s, (u8*)s + len);
   }
-  operator span<u8>() { return span<u8>(buf); }
+
+  operator span<u8>() { return buf; }
+  operator const_span<u8>() const { return buf; }
 };
 
 /// Writes the UTF-8 encoding for the code point c to `it`.
@@ -199,8 +217,9 @@ constexpr usize kana_start = 0xa;
 constexpr usize kana_end = 0x78;
 
 /// Decodes "Last Bible" text to UTF-8. Writes the UTF-8 to `it`.
+/// Returns `it` after writing.
 template <class OutputIt>
-auto decode_text(OutputIt it, span<u8> text) -> OutputIt {
+auto decode_text(OutputIt it, const_span<u8> text) -> OutputIt {
   auto last_was_kana = false;
   for(u8 b : text) {
     auto c = charset[b];
@@ -228,8 +247,9 @@ constexpr const char16_t en_charset[] =
    "��������������������������������";
 
 /// Decodes "Revelations" text to UTF-8. Writes the UTF-8 to `it`.
+/// Returns `it` after writing.
 template <class OutputIt>
-auto decode_en_text(OutputIt it, span<u8> text) -> OutputIt {
+auto decode_en_text(OutputIt it, const_span<u8> text) -> OutputIt {
   for(u8 b : text) {
     auto c = en_charset[b];
     it = encode_utf8(it, c);
@@ -258,7 +278,8 @@ auto print(OutputIt it, u32 i) -> OutputIt {
   return it;
 }
 
-// misc
+
+// Misc
 // ====
 
 /// lodepng wants 2-bit images packed into bytes (ie. with four pixels in one byte).
@@ -287,7 +308,7 @@ auto pack_2bit_buffer(vec_2d<u8>&& im) -> std::vector<u8> {
       case 3: b |= v[src+2] << 2;
       case 2: b |= v[src+1] << 4;
       case 1: b |= v[src] << 6;
-        v[trg++] = b;
+        v[trg++] = u8(b);
       default:
         /* nothing */;
     }
@@ -298,7 +319,7 @@ auto pack_2bit_buffer(vec_2d<u8>&& im) -> std::vector<u8> {
   return v;
 }
 
-constexpr const char base64_chars[] = 
+constexpr const char base64_chars[] =
   u8"ABCDEFGHIJKLMNOPQRSTUVWXYZ"
     "abcdefghijklmnopqrstuvwxyz"
     "0123456789+/";
@@ -306,7 +327,7 @@ constexpr const char base64_chars[] =
 /// Encodes `data` to base64. Writes the base64 ASCII to `it`.
 /// Adapted from René Nyffenegger's base64.cpp
 template <class OutputIt>
-auto base64_encode(OutputIt it, span<u8> data) -> OutputIt {
+auto base64_encode(OutputIt it, const_span<u8> data) -> OutputIt {
   u8 a_3[3];
   u8 a_4[4];
 

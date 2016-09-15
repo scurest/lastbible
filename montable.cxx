@@ -1,4 +1,5 @@
 #include "common.hxx"
+#include "lodepng.h"
 
 // The table of monster data is located at mons_off. The entries look like
 //   mon {
@@ -21,11 +22,11 @@ constexpr usize mons_off = 0x14f0a;
 constexpr usize mon_gfxs_off = 0x14d45;
 constexpr usize num_mons = 113;
 
-void draw_tiles_to_rect(span<u8> tiles, span_2d<u8> rect) {
+void draw_tiles_to_rect(const_span<u8> tiles, span_2d<u8> rect) {
   auto width_in_tiles = rect.width / 8;
-  auto height_in_tiles = rect.height / 8;
+  auto height_in_tiles = rect.heigth / 8;
   auto num_tiles = width_in_tiles * height_in_tiles;
-  auto tile_chunks = chunks { tiles.begin(), num_tiles, 16 };
+  const_chunks<u8> tile_chunks { tiles.begin(), num_tiles, 16 };
 
   usize idx = 0;
   for (usize y = 0; y != height_in_tiles; ++y) {
@@ -36,7 +37,7 @@ void draw_tiles_to_rect(span<u8> tiles, span_2d<u8> rect) {
   }
 }
 
-void mon_graphic(span<u8> rom, span<u8> entry, vec_2d<u8>& buf) {
+void mon_graphic(const_span<u8> rom, const_span<u8> entry, vec_2d<u8>& buf) {
   auto b0 = entry[0];
   auto height = (b0 & 0xf0) >> 4;
   auto width = b0 & 0x0f;
@@ -49,9 +50,9 @@ void mon_graphic(span<u8> rom, span<u8> entry, vec_2d<u8>& buf) {
   draw_tiles_to_rect(tiles, buf);
 }
 
-void mon_table(utf8_str& out, span<u8> rom) {
-  auto mons = chunks { rom.begin() + mons_off, num_mons, 32 };
-  auto mon_gfxs = chunks { rom.begin() + mon_gfxs_off, num_mons, 4 };
+void mon_table(utf8_str& out, const_span<u8> rom) {
+  const_chunks<u8> mons { rom.begin() + mons_off, num_mons, 32 };
+  const_chunks<u8> mon_gfxs { rom.begin() + mon_gfxs_off, num_mons, 4 };
 
   std::vector<u8> img_buf;
   std::vector<u8> png_buf;
@@ -87,11 +88,11 @@ void mon_table(utf8_str& out, span<u8> rom) {
 
 int main(int argc, char** v) {
   if (argc != 3) {
-    fputs("Usage: worldmap path/to/rom.gb output.png\n", stderr);
+    fputs("Usage: montable /path/to/rom.gb out.html", stderr);
     return 1;
   }
 
-  auto rom = read_entire_file(v[1]);
+  auto rom = read_file(v[1]);
   utf8_str s;
   s.append(u8"<!doctype html>\n"
              "<html lang=en>\n"
