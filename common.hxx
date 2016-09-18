@@ -28,7 +28,7 @@ struct span {
 
   constexpr span(T* b, T* e) : begin_(b), end_(e) {}
 
-  using nonconst_T = typename std::remove_const<T>::type;
+  using nonconst_T = std::remove_const_t<T>;
   span(std::vector<nonconst_T>& v) : span(v.data(), v.data() + v.size()) {}
   span(const std::vector<nonconst_T>& v) : span(v.data(), v.data() + v.size()) {}
 
@@ -221,7 +221,7 @@ constexpr usize kana_end = 0x78;
 template <class OutputIt>
 auto decode_text(OutputIt it, const_span<u8> text) -> OutputIt {
   auto last_was_kana = false;
-  for(u8 b : text) {
+  for (u8 b : text) {
     auto c = charset[b];
     // Beautify dakuten (か゛ -> が)
     if (last_was_kana && c == u'゛') {
@@ -250,7 +250,7 @@ constexpr const char16_t en_charset[] =
 /// Returns `it` after writing.
 template <class OutputIt>
 auto decode_en_text(OutputIt it, const_span<u8> text) -> OutputIt {
-  for(u8 b : text) {
+  for (u8 b : text) {
     auto c = en_charset[b];
     it = encode_utf8(it, c);
   }
@@ -261,16 +261,13 @@ auto decode_en_text(OutputIt it, const_span<u8> text) -> OutputIt {
 /// Returns `it` after writing.
 template <class OutputIt>
 auto print(OutputIt it, u32 i) -> OutputIt {
-  if (i == 0) {
-    *it++ = '0';
-    return it;
-  }
-
   u8 buf[10];
   auto p = buf + 10;
-  for (; i != 0; i /= 10) {
+  do {
     *--p = '0' + (i % 10);
-  }
+    i /= 10;
+  } while (i != 0);
+
   for (; p != buf + 10; ++p) {
     *it++ = *p;
   }
@@ -296,15 +293,16 @@ auto pack_2bit_buffer(vec_2d<u8>&& im) -> std::vector<u8> {
 
   // For each scanline...
   while (src != len) {
-    usize x;
+    usize x = 0;
     // Pack four bytes into one byte
-    for (x = 0; x != (w/4)*4; ++x) {
+    for (; x != (w/4)*4; ++x) {
       v[trg++] = (v[src] << 6) | (v[src+1] << 4) |(v[src+2] << 2) | v[src+3];
       src += 4;
     }
     // Pack any leftover bytes
+    auto num_leftover = w - x;
     auto b = 0;
-    switch (w - x) {
+    switch (num_leftover) {
       case 3: b |= v[src+2] << 2;
       case 2: b |= v[src+1] << 4;
       case 1: b |= v[src] << 6;
@@ -312,7 +310,7 @@ auto pack_2bit_buffer(vec_2d<u8>&& im) -> std::vector<u8> {
       default:
         /* nothing */;
     }
-    src += w - x;
+    src += num_leftover;
   }
 
   v.resize(trg);
@@ -340,7 +338,7 @@ auto base64_encode(OutputIt it, const_span<u8> data) -> OutputIt {
       a_4[2] = ((a_3[1] & 0x0f) << 2) + ((a_3[2] & 0xc0) >> 6);
       a_4[3] = a_3[2] & 0x3f;
 
-      for(int j = 0; j != 4 ; j++)
+      for (int j = 0; j != 4 ; j++)
         *it++ = u8(base64_chars[a_4[j]]);
 
       i = 0;
@@ -348,7 +346,7 @@ auto base64_encode(OutputIt it, const_span<u8> data) -> OutputIt {
   }
 
   if (i != 0) {
-    for(int j = i; j != 3; j++)
+    for (int j = i; j != 3; j++)
       a_3[j] = '\0';
 
     a_4[0] = (a_3[0] & 0xfc) >> 2;
@@ -358,7 +356,7 @@ auto base64_encode(OutputIt it, const_span<u8> data) -> OutputIt {
 
     for (int j = 0; j != i + 1; j++)
       *it++ = u8(base64_chars[a_4[j]]);
-    while(i++ < 3)
+    while (i++ < 3)
       *it++ = '=';
   }
 
