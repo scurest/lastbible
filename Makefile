@@ -1,4 +1,4 @@
-CXX=clang++
+CXX=c++
 CXXFLAGS=--std=c++14 -Wall -Wextra
 
 all: worldmap montable
