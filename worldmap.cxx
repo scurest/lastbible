@@ -63,7 +63,7 @@ auto draw_worldmap(span<u8> rom) -> vec_2d<u8> {
 
 int main(int argc, char** argv) {
   if (argc != 3) {
-    fputs("Usage: worldmap /path/to/rom.gb out.png", stderr);
+    fputs("Usage: worldmap /path/to/rom.gb out.png\n", stderr);
     return 1;
   }
 

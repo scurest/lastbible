@@ -88,7 +88,7 @@ void mon_table(utf8_str& out, const_span<u8> rom) {
 
 int main(int argc, char** v) {
   if (argc != 3) {
-    fputs("Usage: montable /path/to/rom.gb out.html", stderr);
+    fputs("Usage: montable /path/to/rom.gb out.html\n", stderr);
     return 1;
   }
 
