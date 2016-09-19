@@ -19,6 +19,7 @@
 
 
 constexpr usize mons_off = 0x14f0a;
+constexpr usize en_mons_off = 0x166dc;
 constexpr usize mon_gfxs_off = 0x14d45;
 constexpr usize num_mons = 113;
 
@@ -50,9 +51,13 @@ void mon_graphic(const_span<u8> rom, const_span<u8> entry, vec_2d<u8>& buf) {
   draw_tiles_to_rect(tiles, buf);
 }
 
-void mon_table(utf8_str& out, const_span<u8> rom) {
+void mon_table(utf8_str& out, const_span<u8> rom, const_span<u8> en_rom = {}) {
   const_chunks<u8> mons { rom.begin() + mons_off, num_mons, 32 };
   const_chunks<u8> mon_gfxs { rom.begin() + mon_gfxs_off, num_mons, 4 };
+  const_chunks<u8> en_mons;
+  if (en_rom) {
+    en_mons = const_chunks<u8> { en_rom.begin() + en_mons_off, num_mons, 32 };
+  }
 
   std::vector<u8> img_buf;
   std::vector<u8> png_buf;
@@ -60,7 +65,11 @@ void mon_table(utf8_str& out, const_span<u8> rom) {
   auto outi = std::back_inserter(out);
 
   out.append(u8"<table border=1>\n"
-               "<tr><th>No.<th lang=ja>名前<th>\n");
+               "<tr><th>No.<th lang=ja>名前");
+  if (en_rom) {
+    out.append(u8"<th>Name");
+  }
+  out.append(u8"<th>\n");
 
   for (usize i = 0; i != num_mons; ++i) {
     auto mon = mons[i];
@@ -76,9 +85,14 @@ void mon_table(utf8_str& out, const_span<u8> rom) {
 
     out.append(u8"<tr><td>");
     print(outi, i + 1);
-    out.append(u8"</td><td lang=ja>");
+    out.append(u8"<td lang=ja>");
     decode_text(outi, mon.slice(0, 7));
-    out.append(u8"</td><td><img src='data:image/png;base64,");
+    if (en_rom) {
+      auto en_mon = en_mons[i];
+      out.append(u8"<td>");
+      decode_en_text_escape_html(outi, en_mon.slice(0, 7));
+    }
+    out.append(u8"<td><img src='data:image/png;base64,");
     base64_encode(outi, png_buf);
     out.append(u8"'>\n");
   }
@@ -86,13 +100,17 @@ void mon_table(utf8_str& out, const_span<u8> rom) {
   out.append(u8"</table>\n");
 }
 
-int main(int argc, char** v) {
-  if (argc != 3) {
-    fputs("Usage: montable /path/to/rom.gb out.html\n", stderr);
+int main(int argc, char** argv) {
+  if (argc != 3 && argc != 4) {
+    fputs("Usage: montable /path/to/rom.gb [/path/to/english/rom.gb] out.html\n", stderr);
     return 1;
   }
 
-  auto rom = read_file(v[1]);
+  auto rom_path = argv[1];
+  auto en_rom_path = argc == 3 ? nullptr : argv[2];
+  auto out_path = argc == 3 ? argv[2] : argv[3];
+
+  auto rom = read_file(rom_path);
   utf8_str s;
   s.append(u8"<!doctype html>\n"
              "<html lang=en>\n"
@@ -107,9 +125,15 @@ int main(int argc, char** v) {
              "}"
              "</style>\n"
              "\n");
-  mon_table(s, rom);
+  if (!en_rom_path) {
+    mon_table(s, rom);
+  }
+  else {
+    auto en_rom = read_file(en_rom_path);
+    mon_table(s, rom, en_rom);
+  }
   s.append(u8"<p>(The garbage data in the last four rows is because there are only 109 "
              "monsters but there are 113 monster graphics.)\n"
              "</html>\n");
-  write_file(v[2], s);
+  write_file(out_path, s);
 }

@@ -1,5 +1,6 @@
 #pragma once
 
+#include <algorithm>
 #include <cassert>
 #include <cstdint>
 #include <cstdio>
@@ -26,6 +27,7 @@ struct span {
   T* begin_;
   T* end_;
 
+  constexpr span() : begin_(nullptr), end_(nullptr) {}
   constexpr span(T* b, T* e) : begin_(b), end_(e) {}
 
   using nonconst_T = std::remove_const_t<T>;
@@ -45,6 +47,7 @@ struct span {
     return { begin_ + l_idx, begin_ + r_idx };
   }
 
+  constexpr operator bool() const { return begin_ != nullptr; }
   constexpr operator span<const T>() const { return { begin_, end_ }; }
 };
 template <class T> using const_span = span<const T>;
@@ -55,6 +58,9 @@ struct chunks {
   T* start;
   usize len;
   usize chunk_size;
+
+  constexpr chunks() : start(nullptr), len(0), chunk_size(0) {}
+  constexpr chunks(T* s, usize l, usize c) : start(s), len(l), chunk_size(c) {}
 
   constexpr auto operator[](usize pos) const -> span<T> {
     auto begin = start + chunk_size * pos;
@@ -256,6 +262,27 @@ auto decode_en_text(OutputIt it, const_span<u8> text) -> OutputIt {
   }
   return it;
 }
+
+/// Same as decode_en_text, but HTML escapes '&' and '<'.
+template <class OutputIt>
+auto decode_en_text_escape_html(OutputIt it, const_span<u8> text) -> OutputIt {
+  for (u8 b : text) {
+    auto c = en_charset[b];
+    if (c == u'&') {
+      auto s = u8"&amp;";
+      it = std::copy(s, s+5, it);
+    }
+    else if (c == u'<') {
+      auto s = u8"&lt;";
+      it = std::copy(s, s+4, it);
+    }
+    else {
+      it = encode_utf8(it, c);
+    }
+  }
+  return it;
+}
+
 
 /// Print `i` as a numeral. The ASCII text is written to `it`.
 /// Returns `it` after writing.
