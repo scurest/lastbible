@@ -96,21 +96,20 @@ int main(int argc, char** v) {
   utf8_str s;
   s.append(u8"<!doctype html>\n"
              "<html lang=en>\n"
-             "<head>\n"
              "<meta charset=utf-8>\n"
+             "<title>女神転生外伝 Last Bible Monster Table</title>\n"
              "<style>"
              "img {"
              "image-rendering: -moz-crisp-edges;"
              "image-rendering: -webkit-crisp-edges;"
              "image-rendering: pixelated;"
              "image-rendering: crisp-edges;"
-             "}</style>\n"
-             "</head>\n"
-             "<body>\n");
+             "}"
+             "</style>\n"
+             "\n");
   mon_table(s, rom);
   s.append(u8"<p>(The garbage data in the last four rows is because there are only 109 "
-             "monsters but there are 113 monster graphics.)</p>\n"
-             "</body>\n"
+             "monsters but there are 113 monster graphics.)\n"
              "</html>\n");
   write_file(v[2], s);
 }
