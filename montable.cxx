@@ -6,7 +6,7 @@
 //     name: u8[7],
 //     ...
 //   }
-// Total size of an entry: 32
+// Note: sizeof(mon) == 32
 //
 // The table of monster graphic data is located at mon_gfxs_off. The entries
 // look like
@@ -23,21 +23,24 @@ constexpr usize en_mons_off = 0x166dc;
 constexpr usize mon_gfxs_off = 0x14d45;
 constexpr usize num_mons = 113;
 
-void draw_tiles_to_rect(const_span<u8> tiles, span_2d<u8> rect) {
-  auto width_in_tiles = rect.width / 8;
-  auto height_in_tiles = rect.heigth / 8;
-  auto num_tiles = width_in_tiles * height_in_tiles;
+
+/// Draws w*h tiles from a sequence of tiles to rect. Produces h rows of w tiles,
+/// in the usual left-to-right top-to-bottom order.
+void draw_tiles_to_rect(const_span<u8> tiles, usize w, usize h, span_2d<u8> rect) {
+  auto num_tiles = w * h;
   const_chunks<u8> tile_chunks { tiles.begin(), num_tiles, 16 };
 
   usize idx = 0;
-  for (usize y = 0; y != height_in_tiles; ++y) {
-    for (usize x = 0; x != width_in_tiles; ++x) {
+  for (usize y = 0; y != h; ++y) {
+    for (usize x = 0; x != w; ++x) {
       auto tile = tile_chunks[idx++];
       draw_tile(tile, rect.subrect(8*x, 8*y, 8, 8));
     }
   }
 }
 
+/// Draws a monster graphics, given an entry in the monster graphics table.
+/// The image is placed in `buf`.
 void mon_graphic(const_span<u8> rom, const_span<u8> entry, vec_2d<u8>& buf) {
   auto b0 = entry[0];
   auto height = (b0 & 0xf0) >> 4;
@@ -46,22 +49,22 @@ void mon_graphic(const_span<u8> rom, const_span<u8> entry, vec_2d<u8>& buf) {
   u16 addr = u16(entry[2]) + (u16(entry[3]) << 8);
 
   auto off = page_addr(page, addr);
-  auto tiles = rom.slice(off, off + 16*width*height);
+  auto tiles = rom.slice_len(off, 16*width*height);
   buf.resize(8*width, 8*height);
-  draw_tiles_to_rect(tiles, buf);
+  draw_tiles_to_rect(tiles, width, height, buf);
 }
 
+/// Write an HTML table of monster data to `out`. if `en_rom` is given,
+/// the table will contain English names as well.
 void mon_table(utf8_str& out, const_span<u8> rom, const_span<u8> en_rom = {}) {
   const_chunks<u8> mons { rom.begin() + mons_off, num_mons, 32 };
-  const_chunks<u8> mon_gfxs { rom.begin() + mon_gfxs_off, num_mons, 4 };
   const_chunks<u8> en_mons;
   if (en_rom) {
     en_mons = const_chunks<u8> { en_rom.begin() + en_mons_off, num_mons, 32 };
   }
-
+  const_chunks<u8> mon_gfxs { rom.begin() + mon_gfxs_off, num_mons, 4 };
   std::vector<u8> img_buf;
   std::vector<u8> png_buf;
-
   auto outi = std::back_inserter(out);
 
   out.append(u8"<table border=1>\n"

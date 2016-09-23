@@ -15,6 +15,7 @@ struct tile_data {
   chunks<u8> block16s;
 };
 
+constexpr usize world_map_off = 0x18116;
 constexpr usize world_width_tiles = 224;
 constexpr usize world_heigth_tiles = 160;
 
@@ -39,15 +40,15 @@ void draw_block16(tile_data& td, span_2d<u8> rect, u8 id) {
 
 auto draw_worldmap(span<u8> rom) -> vec_2d<u8> {
   tile_data td {
-    { rom.begin() + 0x2009b, 16*8, 16 },
-    { rom.begin() +  0x4000*1 + 0x2e69, 255, 4 },
-    { rom.begin() + 0x4000*7 + 0x0112, 255, 4}
+    { rom.begin() + 0x2009b, 16 * 8, 16 },
+    { rom.begin() + 0x6e69, 255, 4 },
+    { rom.begin() + 0x1c112, 255, 4 }
   };
   auto world_width_block16s = world_width_tiles / 4;
   auto world_heigth_block16s = world_heigth_tiles / 4;
   auto world_area_block16s = world_width_block16s * world_heigth_block16s;
 
-  auto map_data = rom.slice(0x18116, 0x18116 + world_area_block16s);
+  auto map_data = rom.slice_len(world_map_off, world_area_block16s);
   vec_2d<u8> out (8*world_width_tiles, 8*world_heigth_tiles);
 
   usize idx = 0;

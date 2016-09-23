@@ -43,8 +43,11 @@ struct span {
     return begin_[pos];
   }
 
-  constexpr auto slice(usize l_idx, usize r_idx) const -> span<T> {
-    return { begin_ + l_idx, begin_ + r_idx };
+  constexpr auto slice(usize l, usize r) const -> span<T> {
+    return { begin_ + l, begin_ + r };
+  }
+  constexpr auto slice_len(usize off, usize len) const -> span<T> {
+    return slice(off, off + len);
   }
 
   constexpr operator bool() const { return begin_ != nullptr; }
@@ -86,10 +89,10 @@ struct span_2d {
 
   constexpr auto subrect(usize x, usize y, usize w, usize h) const -> span_2d<T> {
     auto new_begin = begin + y*pitch + x;
-    return { new_begin, pitch, w, h};
+    return { new_begin, pitch, w, h };
   }
 
-  constexpr operator span_2d<const T>() const { return { begin, pitch, width, heigth}; }
+  constexpr operator span_2d<const T>() const { return { begin, pitch, width, heigth }; }
 };
 template <class T> using const_span_2d = span_2d<const T>;
 
@@ -323,19 +326,17 @@ auto pack_2bit_buffer(vec_2d<u8>&& im) -> std::vector<u8> {
     usize x = 0;
     // Pack four bytes into one byte
     for (; x != (w/4)*4; ++x) {
-      v[trg++] = (v[src] << 6) | (v[src+1] << 4) |(v[src+2] << 2) | v[src+3];
+      v[trg++] = (v[src] << 6) | (v[src+1] << 4) | (v[src+2] << 2) | v[src+3];
       src += 4;
     }
     // Pack any leftover bytes
     auto num_leftover = w - x;
-    auto b = 0;
+    auto b = 0u;
     switch (num_leftover) {
       case 3: b |= v[src+2] << 2;
       case 2: b |= v[src+1] << 4;
       case 1: b |= v[src] << 6;
         v[trg++] = u8(b);
-      default:
-        /* nothing */;
     }
     src += num_leftover;
   }
