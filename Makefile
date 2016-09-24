@@ -3,10 +3,10 @@ CXXFLAGS=--std=c++14 -Wall -Wextra
 
 all: worldmap montable
 
-worldmap: lodepng.o worldmap.cxx
+worldmap: common.hxx lodepng.o worldmap.cxx
 	$(CXX) $(CXXFLAGS) lodepng.o worldmap.cxx -o worldmap
 
-montable: lodepng.o montable.cxx
+montable: common.hxx lodepng.o montable.cxx
 	$(CXX) $(CXXFLAGS) lodepng.o montable.cxx -o montable
 
 lodepng.o: lodepng.cpp
