@@ -49,6 +49,9 @@ struct span {
   constexpr auto slice_len(usize off, usize len) const -> span<T> {
     return slice(off, off + len);
   }
+  constexpr auto slice_to_end(usize off) const -> span<T> {
+    return { begin_ + off, end_ };
+  }
 
   constexpr operator bool() const { return begin_ != nullptr; }
   constexpr operator span<const T>() const { return { begin_, end_ }; }
@@ -314,34 +317,31 @@ auto print(OutputIt it, u32 i) -> OutputIt {
 /// into the format for PNG. The image is consumed and its buffer is reused for the
 /// result.
 auto pack_2bit_buffer(vec_2d<u8>&& im) -> std::vector<u8> {
-  std::vector<u8> v(std::move(im.vec));
-  usize len = v.size();
   usize w = im.width;
+  std::vector<u8> v(std::move(im.vec));
+  const_span<u8> src = v;
+  usize tgt = 0;
 
-  usize trg = 0;
-  usize src = 0;
+  while (src.size() != 0) {
+    auto scanline = src.slice(0, w);
 
-  // For each scanline...
-  while (src != len) {
-    usize x = 0;
-    // Pack four bytes into one byte
-    for (; x != (w/4)*4; ++x) {
-      v[trg++] = (v[src] << 6) | (v[src+1] << 4) | (v[src+2] << 2) | v[src+3];
-      src += 4;
+    auto s = scanline;
+    while (s.size() >= 4) {
+      v[tgt++] = (s[0] << 6) | (s[1] << 4) | (s[2] << 2) | s[3];
+      s = s.slice_to_end(4);
     }
-    // Pack any leftover bytes
-    auto num_leftover = w - x;
     auto b = 0u;
-    switch (num_leftover) {
-      case 3: b |= v[src+2] << 2;
-      case 2: b |= v[src+1] << 4;
-      case 1: b |= v[src] << 6;
-        v[trg++] = u8(b);
+    switch (s.size()) {
+      case 3: b |= s[2] << 2;
+      case 2: b |= s[1] << 4;
+      case 1: b |= s[0] << 6;
+        v[tgt++] = u8(b);
     }
-    src += num_leftover;
+
+    src = src.slice_to_end(w);
   }
 
-  v.resize(trg);
+  v.resize(tgt);
   return v;
 }
 
