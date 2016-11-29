@@ -12,7 +12,9 @@ To build on *nix:
 
     $ git clone https://github.com/scurest/lastbible.git
     $ cd lastbible
-    $ make
+    $ mkdir build
+    $ cd build
+    $ cmake .. && make
 
 The ROM file used by all the programs is the Japanese version for the original Game Boy
 (SHA1: `537b38234da5164335e98f6aee3b792048624626`). The English ROM optionally used by

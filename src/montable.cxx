@@ -1,5 +1,5 @@
 #include "common.hxx"
-#include "lodepng.h"
+#include "lodepng/lodepng.h"
 
 // The table of monster data is located at mons_off. The entries look like
 //   mon {

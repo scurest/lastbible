@@ -1,5 +1,5 @@
 #include "common.hxx"
-#include "lodepng.h"
+#include "lodepng/lodepng.h"
 
 // The world map is 224x160 tiles. Instead of storing every tile index individually,
 // they're clumped together into groups of 2x2 tiles, called a block4, and then groups
