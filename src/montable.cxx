@@ -7,6 +7,7 @@
 #include "common/fileio.hxx"
 #include "common/gameboy.hxx"
 #include "common/int.hxx"
+#include "common/optional.hxx"
 #include "common/pack2bit.hxx"
 #include "common/span.hxx"
 #include "common/text.hxx"
@@ -67,31 +68,46 @@ void mon_graphic(const_span<u8> rom, const_span<u8> entry, vec_2d<u8>& buf) {
 
 /// Write an HTML table of monster data to `w`. If `en_rom` is given,
 /// the table will contain English names as well.
-void mon_table(std::ostringstream& w, const_span<u8> rom, const_span<u8> en_rom = {}) {
+void mon_table(
+  std::ostringstream& w,
+  const_span<u8> rom,
+  optional<const_span<u8>> en_rom = {}
+)
+{
   const_chunks<u8> mons { rom.begin() + mons_off, num_mons, 32 };
-  const_chunks<u8> en_mons;
-  if (en_rom) {
-    en_mons = const_chunks<u8> { en_rom.begin() + en_mons_off, num_mons, 32 };
-  }
   const_chunks<u8> mon_gfxs { rom.begin() + mon_gfxs_off, num_mons, 4 };
+  auto en_mons = map_opt(en_rom, [](const_span<u8> en_rom) {
+    return const_chunks<u8> { en_rom.begin() + en_mons_off, num_mons, 32 };
+  });
+
   std::vector<u8> img_buf;
   std::vector<u8> png_buf;
 
+  w << u8"<table border=1>\n";
+
+  // Table header
   w <<
-    u8"<table border=1>\n"
-    "<tr><th>No.<th lang=ja>名前";
-  if (en_rom) {
-    w << u8"<th>Name";
-  }
-  w << u8"<th>\n";
+    u8"<tr>" <<
+      u8"<th>No."
+      u8"<th lang=ja>名前" <<
+      (en_rom ? u8"<th>Name" : "") <<
+      u8"<th>\n";
 
   for (usize i = 0; i != num_mons; ++i) {
-    auto mon = mons[i];
-    auto gfx = mon_gfxs[i];
-
     auto mon_num = i + 1;
-    auto mon_name = mon.slice(0,7);
 
+    auto mon_name = mons[i].slice(0,7);
+
+    auto en_mon_name = map_opt(en_mons, [=](const_chunks<u8> en_mons) {
+      return en_mons[i].slice(0,7);
+    });
+    auto en_name_printer = maybe_print(
+      map_opt(en_mon_name, [](const_span<u8> en_mon_name) {
+        return decode_en_text_escape_html {en_mon_name};
+      })
+    );
+
+    auto gfx = mon_gfxs[i];
     vec_2d<u8> img { std::move(img_buf), 0, 0 };
     mon_graphic(rom, gfx, img);
     auto width = img.width;
@@ -100,19 +116,15 @@ void mon_table(std::ostringstream& w, const_span<u8> rom, const_span<u8> en_rom 
     png_buf.clear();
     lodepng::encode(png_buf, img_buf.data(), width, height, LCT_GREY, 2);
 
+    // Table row
     w <<
       u8"<tr>" <<
         u8"<td>" << mon_num <<
-        u8"<td lang=ja>" << decode_text {mon_name};
-    if (en_rom) {
-      auto en_mon = en_mons[i];
-      auto en_mon_name = en_mon.slice(0,7);
-      w << u8"<td>" << decode_en_text_escape_html {en_mon_name};
-    }
-    w <<
-      u8"<td><img src='data:image/png;base64," <<
-      base64_encode {png_buf} <<
-      u8"'>\n";
+        u8"<td lang=ja>" << decode_text {mon_name} <<
+        (en_mon_name ? "<td>" : "") << en_name_printer <<
+        u8"<td><img src='data:image/png;base64," <<
+          base64_encode {png_buf} <<
+        u8"'>\n";
   }
 
   w << u8"</table>\n";
@@ -125,10 +137,14 @@ int main(int argc, char** argv) {
   }
 
   auto rom_path = argv[1];
-  auto en_rom_path = argc == 3 ? nullptr : argv[2];
+  auto en_rom_path = argc == 3 ? optional<char*>() : optional<char*>(argv[2]);
   auto out_path = argc == 3 ? argv[2] : argv[3];
 
   auto rom = read_file(rom_path);
+  auto en_rom = map_opt(en_rom_path, [](char* path) {
+    return read_file(path);
+  });
+
   std::ostringstream w;
   w <<
     u8"<!doctype html>\n"
@@ -144,16 +160,11 @@ int main(int argc, char** argv) {
       "}"
       "</style>\n"
       "\n";
-  if (!en_rom_path) {
-    mon_table(w, rom);
-  }
-  else {
-    auto en_rom = read_file(en_rom_path);
-    mon_table(w, rom, en_rom);
-  }
+  mon_table(w, rom, en_rom);
   w <<
     u8"<p>(The garbage data in the last four rows is because there are only 109 "
       "monsters but there are 113 monster graphics.)\n"
       "</html>\n";
+
   write_file(out_path, w.str());
 }
