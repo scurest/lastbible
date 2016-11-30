@@ -6,8 +6,9 @@
 ------
 
 Some quick code to dump data from _女神転生外伝 Last Bible_ (Atlus, 1992, Game Boy). Presently
-dumps a list of monster names and graphics, and the worldmap. Written in C++14 +
-`experimental/optional`.
+dumps a list of monster names and graphics, and the worldmap.
+
+Written in C++14 + `experimental/optional`. Licensed under CC0.
 
 To build on *nix:
 
