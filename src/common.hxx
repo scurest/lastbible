@@ -5,7 +5,7 @@
 #include <cstdint>
 #include <cstdio>
 #include <cstring>
-#include <iterator>
+#include <ostream>
 #include <tuple>
 #include <type_traits>
 #include <utility>
@@ -122,7 +122,7 @@ struct vec_2d {
 // File I/O
 // ========
 
-auto read_file(const char* filename) -> std::vector<u8> {
+inline auto read_file(const char* filename) -> std::vector<u8> {
   // I/O streams suck, so just do it the C way.
   auto f = fopen(filename, "rb");
   fseek(f, 0, SEEK_END);
@@ -134,12 +134,18 @@ auto read_file(const char* filename) -> std::vector<u8> {
   return out;
 }
 
-void write_file(const char* filename, const_span<u8> bytes) {
+inline void write_file(const char* filename, const_span<u8> bytes) {
   auto f = fopen(filename, "wb");
   fwrite(bytes.begin(), bytes.size(), 1, f);
   fclose(f);
 }
 
+inline void write_file(const char* filename, const std::string& str) {
+  using u8_ptr = const u8*;
+  auto begin = u8_ptr(str.data());
+  auto end = begin + str.size();
+  write_file(filename, const_span<u8>(begin, end));
+}
 
 // Game Boy routines
 // =================
@@ -157,7 +163,7 @@ constexpr auto page_addr(u8 page, u16 addr) -> usize {
 /// for the tile format.
 ///
 /// Only the color number (0-3) is written. No palette is taken into account.
-void draw_tile(const_span<u8> tile, span_2d<u8> rect) {
+inline void draw_tile(const_span<u8> tile, span_2d<u8> rect) {
   usize idx = 0;
   for (auto y = 0; y != 8; ++y) {
     // data in the ROM is the complement of data in VRAM (idk why)
@@ -174,47 +180,33 @@ void draw_tile(const_span<u8> tile, span_2d<u8> rect) {
 // Text
 // ====
 
-/// A vector that holds UTF-8 data. Smooths over annoying bits of using
-/// std::string (eg. writing u8s).
-struct utf8_str {
-  using value_type = u8;
+/// `os << encode_utf8 {c}` writes the UTF-8 byte sequence for the
+/// codepoint `c` to `os`.
+struct encode_utf8 {
+  char16_t c;
 
-  std::vector<u8> buf;
-
-  void push_back(u8 b) {
-    buf.push_back(b);
+  friend inline auto operator<<(
+    std::ostream& os,
+    encode_utf8 x
+  ) -> std::ostream&
+  {
+    char16_t c = x.c;
+    if (c < 0x80u) {
+      os.put(c);
+    }
+    else if (x.c < 0x800u) {
+      os.put(0xc0 | (c >> 6));
+      os.put(0x80 | (c & 0x3f));
+    }
+    else {
+      os.put(0xe0 | (c >> 12));
+      os.put(0x80 | ((c >> 6) & 0x3f));
+      os.put(0x80 | (c & 0x3f));
+    }
+    return os;
   }
-  template <usize N>
-  void append(char const (&s)[N]) {
-    buf.insert(buf.end(), (u8*)s, (u8*)s + N - 1);
-  }
-  void append(const char* s) {
-    auto len = strlen(s);
-    buf.insert(buf.end(), (u8*)s, (u8*)s + len);
-  }
-
-  operator span<u8>() { return buf; }
-  operator const_span<u8>() const { return buf; }
 };
 
-/// Writes the UTF-8 encoding for the code point c to `it`.
-/// Returns the position of the iterator after writing.
-template <class OutputIt>
-constexpr auto encode_utf8(OutputIt it, char16_t c) -> OutputIt {
-  if (c < 0x80) {
-    *it++ = u8(c);
-  }
-  else if (c < 0x800) {
-    *it++ = u8(0xc0 | (c >> 6));
-    *it++ = u8(0x80 | (c & 0x3f));
-  }
-  else {
-    *it++ = u8(0xe0 | (c >> 12));
-    *it++ = u8(0x80 | ((c >> 6) & 0x3f));
-    *it++ = u8(0x80 | (c & 0x3f));
-  }
-  return it;
-}
 
 constexpr const char16_t charset[] =
   u"０１２３４５６７８９あいうえおかきくけこさしすせそたちつてとなに"
@@ -228,25 +220,33 @@ constexpr const char16_t charset[] =
 constexpr usize kana_start = 0xa;
 constexpr usize kana_end = 0x78;
 
-/// Decodes "Last Bible" text to UTF-8. Writes the UTF-8 to `it`.
-/// Returns `it` after writing.
-template <class OutputIt>
-auto decode_text(OutputIt it, const_span<u8> text) -> OutputIt {
-  auto last_was_kana = false;
-  for (u8 b : text) {
-    auto c = charset[b];
-    // Beautify dakuten (か゛ -> が)
-    if (last_was_kana && c == u'゛') {
-      c = u'\u3099'; // combining dakuten
+/// `os << decode_text {text}` converts the character encoding used by
+/// Last Bible to UTF-8 and writes it to `os`.
+struct decode_text {
+  const_span<u8> text;
+
+  friend inline auto operator<<(
+    std::ostream& os,
+    const decode_text& x
+  ) -> std::ostream&
+  {
+    auto last_was_kana = false;
+    for (auto b : x.text) {
+      auto c = charset[b];
+      // Beautify dakuten (か゛ -> が)
+      if (last_was_kana && c == u'゛') {
+        c = u'\u3099'; // combining dakuten
+      }
+      else if (last_was_kana && c == u'゜') {
+        c = u'\u309a'; // combining handakuten
+      }
+      os << encode_utf8 {c};
+      last_was_kana = kana_start <= b && b < kana_end;
     }
-    else if (last_was_kana && c == u'゜') {
-      c = u'\u309a'; // combining handakuten
-    }
-    it = encode_utf8(it, c);
-    last_was_kana = kana_start <= b && b < kana_end;
+    return os;
   }
-  return it;
-}
+};
+
 
 constexpr const char16_t en_charset[] =
   u"0123456789ABCDEFGHIJKLMNOPQRSTUV"
@@ -258,55 +258,31 @@ constexpr const char16_t en_charset[] =
    "��������������������������������"
    "��������������������������������";
 
-/// Decodes "Revelations" text to UTF-8. Writes the UTF-8 to `it`.
-/// Returns `it` after writing.
-template <class OutputIt>
-auto decode_en_text(OutputIt it, const_span<u8> text) -> OutputIt {
-  for (u8 b : text) {
-    auto c = en_charset[b];
-    it = encode_utf8(it, c);
-  }
-  return it;
-}
+/// `os << decode_en_text_escape_html {text}` converts the text encoding
+/// for Revelations: The Demon Slayer into UTF-8 and writes it to `os`.
+struct decode_en_text_escape_html {
+  const_span<u8> text;
 
-/// Same as decode_en_text, but HTML escapes '&' and '<'.
-template <class OutputIt>
-auto decode_en_text_escape_html(OutputIt it, const_span<u8> text) -> OutputIt {
-  for (u8 b : text) {
-    auto c = en_charset[b];
-    if (c == u'&') {
-      auto s = u8"&amp;";
-      it = std::copy(s, s+5, it);
+  friend inline auto operator<<(
+    std::ostream& os,
+    const decode_en_text_escape_html& x
+  ) -> std::ostream&
+  {
+    for (auto b : x.text) {
+      auto c = en_charset[b];
+      if (c == u'&') {
+        os << u8"&amp;";
+      }
+      else if (c == u'<') {
+        os << u8"&lt;";
+      }
+      else {
+        os << encode_utf8{c};
+      }
     }
-    else if (c == u'<') {
-      auto s = u8"&lt;";
-      it = std::copy(s, s+4, it);
-    }
-    else {
-      it = encode_utf8(it, c);
-    }
+    return os;
   }
-  return it;
-}
-
-
-/// Print `i` as a numeral. The ASCII text is written to `it`.
-/// Returns `it` after writing.
-template <class OutputIt>
-auto print(OutputIt it, u32 i) -> OutputIt {
-  u8 buf[10];
-  auto p = buf + 10;
-  do {
-    *--p = '0' + (i % 10);
-    i /= 10;
-  } while (i != 0);
-
-  for (; p != buf + 10; ++p) {
-    *it++ = *p;
-  }
-
-  return it;
-}
+};
 
 
 // Misc
@@ -350,43 +326,50 @@ constexpr const char base64_chars[] =
     "abcdefghijklmnopqrstuvwxyz"
     "0123456789+/";
 
-/// Encodes `data` to base64. Writes the base64 ASCII to `it`.
-/// Adapted from René Nyffenegger's base64.cpp
-template <class OutputIt>
-auto base64_encode(OutputIt it, const_span<u8> data) -> OutputIt {
-  u8 a_3[3];
-  u8 a_4[4];
+/// `os << base64_encode{data}` writes the base64 representation
+/// of data to `os`.
+struct base64_encode {
+  const_span<u8> data;
 
-  int i = 0;
-  for (u8 b: data) {
-    a_3[i++] = b;
-    if (i == 3) {
+  friend inline auto operator<<(
+    std::ostream& os,
+    const base64_encode& x
+  ) -> std::ostream&
+  {
+    u8 a_3[3];
+    u8 a_4[4];
+
+    int i = 0;
+    for (u8 b: x.data) {
+      a_3[i++] = b;
+      if (i == 3) {
+        a_4[0] = (a_3[0] & 0xfc) >> 2;
+        a_4[1] = ((a_3[0] & 0x03) << 4) + ((a_3[1] & 0xf0) >> 4);
+        a_4[2] = ((a_3[1] & 0x0f) << 2) + ((a_3[2] & 0xc0) >> 6);
+        a_4[3] = a_3[2] & 0x3f;
+
+        for (int j = 0; j != 4 ; j++)
+          os.put(base64_chars[a_4[j]]);
+
+        i = 0;
+      }
+    }
+
+    if (i != 0) {
+      for (int j = i; j != 3; j++)
+        a_3[j] = '\0';
+
       a_4[0] = (a_3[0] & 0xfc) >> 2;
       a_4[1] = ((a_3[0] & 0x03) << 4) + ((a_3[1] & 0xf0) >> 4);
       a_4[2] = ((a_3[1] & 0x0f) << 2) + ((a_3[2] & 0xc0) >> 6);
       a_4[3] = a_3[2] & 0x3f;
 
-      for (int j = 0; j != 4 ; j++)
-        *it++ = u8(base64_chars[a_4[j]]);
-
-      i = 0;
+      for (int j = 0; j != i + 1; j++)
+        os.put(base64_chars[a_4[j]]);
+      while (i++ < 3)
+        os.put('=');
     }
+
+    return os;
   }
-
-  if (i != 0) {
-    for (int j = i; j != 3; j++)
-      a_3[j] = '\0';
-
-    a_4[0] = (a_3[0] & 0xfc) >> 2;
-    a_4[1] = ((a_3[0] & 0x03) << 4) + ((a_3[1] & 0xf0) >> 4);
-    a_4[2] = ((a_3[1] & 0x0f) << 2) + ((a_3[2] & 0xc0) >> 6);
-    a_4[3] = a_3[2] & 0x3f;
-
-    for (int j = 0; j != i + 1; j++)
-      *it++ = u8(base64_chars[a_4[j]]);
-    while (i++ < 3)
-      *it++ = '=';
-  }
-
-  return it;
-}
+};

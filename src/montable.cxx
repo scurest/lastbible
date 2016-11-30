@@ -1,3 +1,4 @@
+#include <sstream>
 #include "common.hxx"
 #include "lodepng/lodepng.h"
 
@@ -54,9 +55,9 @@ void mon_graphic(const_span<u8> rom, const_span<u8> entry, vec_2d<u8>& buf) {
   draw_tiles_to_rect(tiles, width, height, buf);
 }
 
-/// Write an HTML table of monster data to `out`. if `en_rom` is given,
+/// Write an HTML table of monster data to `w`. If `en_rom` is given,
 /// the table will contain English names as well.
-void mon_table(utf8_str& out, const_span<u8> rom, const_span<u8> en_rom = {}) {
+void mon_table(std::ostringstream& w, const_span<u8> rom, const_span<u8> en_rom = {}) {
   const_chunks<u8> mons { rom.begin() + mons_off, num_mons, 32 };
   const_chunks<u8> en_mons;
   if (en_rom) {
@@ -65,42 +66,46 @@ void mon_table(utf8_str& out, const_span<u8> rom, const_span<u8> en_rom = {}) {
   const_chunks<u8> mon_gfxs { rom.begin() + mon_gfxs_off, num_mons, 4 };
   std::vector<u8> img_buf;
   std::vector<u8> png_buf;
-  auto outi = std::back_inserter(out);
 
-  out.append(u8"<table border=1>\n"
-               "<tr><th>No.<th lang=ja>名前");
+  w <<
+    u8"<table border=1>\n"
+    "<tr><th>No.<th lang=ja>名前";
   if (en_rom) {
-    out.append(u8"<th>Name");
+    w << u8"<th>Name";
   }
-  out.append(u8"<th>\n");
+  w << u8"<th>\n";
 
   for (usize i = 0; i != num_mons; ++i) {
     auto mon = mons[i];
     auto gfx = mon_gfxs[i];
 
+    auto mon_num = i + 1;
+    auto mon_name = mon.slice(0,7);
+
     vec_2d<u8> img { std::move(img_buf), 0, 0 };
     mon_graphic(rom, gfx, img);
-    auto w = img.width;
-    auto h = img.height;
+    auto width = img.width;
+    auto height = img.height;
     img_buf = pack_2bit_buffer(std::move(img));
     png_buf.clear();
-    lodepng::encode(png_buf, img_buf.data(), w, h, LCT_GREY, 2);
+    lodepng::encode(png_buf, img_buf.data(), width, height, LCT_GREY, 2);
 
-    out.append(u8"<tr><td>");
-    print(outi, i + 1);
-    out.append(u8"<td lang=ja>");
-    decode_text(outi, mon.slice(0, 7));
+    w <<
+      u8"<tr>" <<
+        u8"<td>" << mon_num <<
+        u8"<td lang=ja>" << decode_text {mon_name};
     if (en_rom) {
       auto en_mon = en_mons[i];
-      out.append(u8"<td>");
-      decode_en_text_escape_html(outi, en_mon.slice(0, 7));
+      auto en_mon_name = en_mon.slice(0,7);
+      w << u8"<td>" << decode_en_text_escape_html {en_mon_name};
     }
-    out.append(u8"<td><img src='data:image/png;base64,");
-    base64_encode(outi, png_buf);
-    out.append(u8"'>\n");
+    w <<
+      u8"<td><img src='data:image/png;base64," <<
+      base64_encode {png_buf} <<
+      u8"'>\n";
   }
 
-  out.append(u8"</table>\n");
+  w << u8"</table>\n";
 }
 
 int main(int argc, char** argv) {
@@ -114,29 +119,31 @@ int main(int argc, char** argv) {
   auto out_path = argc == 3 ? argv[2] : argv[3];
 
   auto rom = read_file(rom_path);
-  utf8_str s;
-  s.append(u8"<!doctype html>\n"
-             "<html lang=en>\n"
-             "<meta charset=utf-8>\n"
-             "<title>女神転生外伝 Last Bible Monster Table</title>\n"
-             "<style>"
-             "img {"
-             "image-rendering: -moz-crisp-edges;"
-             "image-rendering: -webkit-crisp-edges;"
-             "image-rendering: pixelated;"
-             "image-rendering: crisp-edges;"
-             "}"
-             "</style>\n"
-             "\n");
+  std::ostringstream w;
+  w <<
+    u8"<!doctype html>\n"
+      "<html lang=en>\n"
+      "<meta charset=utf-8>\n"
+      "<title>女神転生外伝 Last Bible Monster Table</title>\n"
+      "<style>"
+      "img {"
+      "image-rendering: -moz-crisp-edges;"
+      "image-rendering: -webkit-crisp-edges;"
+      "image-rendering: pixelated;"
+      "image-rendering: crisp-edges;"
+      "}"
+      "</style>\n"
+      "\n";
   if (!en_rom_path) {
-    mon_table(s, rom);
+    mon_table(w, rom);
   }
   else {
     auto en_rom = read_file(en_rom_path);
-    mon_table(s, rom, en_rom);
+    mon_table(w, rom, en_rom);
   }
-  s.append(u8"<p>(The garbage data in the last four rows is because there are only 109 "
-             "monsters but there are 113 monster graphics.)\n"
-             "</html>\n");
-  write_file(out_path, s);
+  w <<
+    u8"<p>(The garbage data in the last four rows is because there are only 109 "
+      "monsters but there are 113 monster graphics.)\n"
+      "</html>\n";
+  write_file(out_path, w.str());
 }
