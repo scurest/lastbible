@@ -1,5 +1,12 @@
-#include "common.hxx"
+#include <cstdio>
 #include "lodepng/lodepng.h"
+#include "common/chunks.hxx"
+#include "common/int.hxx"
+#include "common/fileio.hxx"
+#include "common/gameboy.hxx"
+#include "common/pack2bit.hxx"
+#include "common/span.hxx"
+#include "common/vec2d.hxx"
 
 // The world map is 224x160 tiles. Instead of storing every tile index individually,
 // they're clumped together into groups of 2x2 tiles, called a block4, and then groups

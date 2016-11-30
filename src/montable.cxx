@@ -1,6 +1,16 @@
+#include <cstdio>
 #include <sstream>
-#include "common.hxx"
+#include <vector>
 #include "lodepng/lodepng.h"
+#include "common/base64.hxx"
+#include "common/chunks.hxx"
+#include "common/fileio.hxx"
+#include "common/gameboy.hxx"
+#include "common/int.hxx"
+#include "common/pack2bit.hxx"
+#include "common/span.hxx"
+#include "common/text.hxx"
+#include "common/vec2d.hxx"
 
 // The table of monster data is located at mons_off. The entries look like
 //   mon {
