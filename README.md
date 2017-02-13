@@ -5,22 +5,40 @@
 
 ------
 
-Some quick code to dump data from _女神転生外伝 Last Bible_ (Atlus, 1992, Game Boy). Presently
-dumps a list of monster names and graphics, and the worldmap.
+Some quick code to dump data from [_女神転生外伝 Last Bible_](https://en.wikipedia.org/wiki/Megami_Tensei_Gaiden:_Last_Bible).
 
-Written in C++14 + `experimental/optional`. Licensed under CC0.
+* `montable rom.gb [en_rom.gbc] out.html`
 
-To build on *nix:
+    Dumps an HTML table containing monster names and sprites.
+
+    If the Game Boy Color translation is provided, the table
+    will also contain English names.
+
+* `worldmap rom.gb out.png`
+
+    Dumps the world map.
+
+
+## Building
+
+On *nix
 
     $ git clone https://github.com/scurest/lastbible.git
     $ cd lastbible
+    $ git submodule update --init --recursive
     $ mkdir build
     $ cd build
-    $ cmake .. && make
+    $ cmake ..
+    $ make
 
-The ROM file used by all the programs is the Japanese version for the original Game Boy
-(SHA1: `537b38234da5164335e98f6aee3b792048624626`). The English ROM optionally used by
-`montable` is the English translation of the Game Boy Color port, _Revelations: The Demon
- Slayer_ (SHA1: `bd684074944ccc02b5f997e7ab95d0b03327773d`).
+## ROM Info
 
-Special thanks to bircd.org's [bgb](http://bgb.bircd.org/).
+* _女神転生外伝 Last Bible_ (Atlus, 1992, Game Boy)
+    * SHA1: 537b38234da5164335e98f6aee3b792048624626
+* _Revelations: The Demon Slayer_ (Atlus, 1999, Game Boy Color)
+    * SHA1: bd684074944ccc02b5f997e7ab95d0b03327773d
+
+------
+------
+
+Special thanks to bircd.org's [bgb](http://bgb.bircd.org/) ♥
