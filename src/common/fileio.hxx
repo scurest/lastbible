@@ -16,7 +16,7 @@ inline auto read_file(const char* filename) -> std::vector<u8> {
   return out;
 }
 
-inline void write_file(const char* filename, const_span<u8> bytes) {
+inline void write_file(const char* filename, span<const u8> bytes) {
   auto f = fopen(filename, "wb");
   fwrite(bytes.begin(), bytes.size(), 1, f);
   fclose(f);
@@ -26,5 +26,5 @@ inline void write_file(const char* filename, const std::string& str) {
   using u8_ptr = const u8*;
   auto begin = u8_ptr(str.data());
   auto end = begin + str.size();
-  write_file(filename, const_span<u8>(begin, end));
+  write_file(filename, span<const u8>(begin, end));
 }

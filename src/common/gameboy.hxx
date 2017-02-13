@@ -11,12 +11,9 @@ constexpr auto page_addr(u8 page, u16 addr) -> usize {
   else throw "address not in ROM pages";
 }
 
-/// Draws a tile to `rect`.
-/// See eg. http://gbdev.gg8.se/wiki/articles/Video_Display#VRAM_Tile_Data
-/// for the tile format.
-///
-/// Only the color number (0-3) is written. No palette is taken into account.
-inline void draw_tile(const_span<u8> tile, span_2d<u8> rect) {
+/// Draws a tile to `rect`. The color number (0-3) is written.
+/// See <http://gbdev.gg8.se/wiki/articles/Video_Display#VRAM_Tile_Data>
+inline void draw_tile(span<const u8> tile, span_2d<u8> rect) {
   usize idx = 0;
   for (auto y = 0; y != 8; ++y) {
     // data in the ROM is the complement of data in VRAM (idk why)

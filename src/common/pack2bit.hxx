@@ -9,7 +9,7 @@
 auto pack_2bit_buffer(vec_2d<u8>&& im) -> std::vector<u8> {
   usize w = im.width;
   std::vector<u8> v(std::move(im.vec));
-  const_span<u8> src = v;
+  span<const u8> src = v;
   usize tgt = 0;
 
   while (src.size() != 0) {

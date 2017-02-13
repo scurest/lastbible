@@ -38,9 +38,9 @@ constexpr usize num_mons = 113;
 
 /// Draws w*h tiles from a sequence of tiles to rect. Produces h rows of w tiles,
 /// in the usual left-to-right top-to-bottom order.
-void draw_tiles_to_rect(const_span<u8> tiles, usize w, usize h, span_2d<u8> rect) {
+void draw_tiles_to_rect(span<const u8> tiles, usize w, usize h, span_2d<u8> rect) {
   auto num_tiles = w * h;
-  const_chunks<u8> tile_chunks { tiles.begin(), num_tiles, 16 };
+  chunks<const u8> tile_chunks { tiles.begin(), num_tiles, 16 };
 
   usize idx = 0;
   for (usize y = 0; y != h; ++y) {
@@ -53,7 +53,7 @@ void draw_tiles_to_rect(const_span<u8> tiles, usize w, usize h, span_2d<u8> rect
 
 /// Draws a monster graphics, given an entry in the monster graphics table.
 /// The image is placed in `buf`.
-void mon_graphic(const_span<u8> rom, const_span<u8> entry, vec_2d<u8>& buf) {
+void mon_graphic(span<const u8> rom, span<const u8> entry, vec_2d<u8>& buf) {
   auto b0 = entry[0];
   auto height = (b0 & 0xf0) >> 4;
   auto width = b0 & 0x0f;
@@ -70,14 +70,14 @@ void mon_graphic(const_span<u8> rom, const_span<u8> entry, vec_2d<u8>& buf) {
 /// the table will contain English names as well.
 void mon_table(
   std::ostringstream& w,
-  const_span<u8> rom,
-  optional<const_span<u8>> en_rom = {}
+  span<const u8> rom,
+  optional<span<const u8>> en_rom = {}
 )
 {
-  const_chunks<u8> mons { rom.begin() + mons_off, num_mons, 32 };
-  const_chunks<u8> mon_gfxs { rom.begin() + mon_gfxs_off, num_mons, 4 };
-  auto en_mons = map_opt(en_rom, [](const_span<u8> en_rom) {
-    return const_chunks<u8> { en_rom.begin() + en_mons_off, num_mons, 32 };
+  chunks<const u8> mons { rom.begin() + mons_off, num_mons, 32 };
+  chunks<const u8> mon_gfxs { rom.begin() + mon_gfxs_off, num_mons, 4 };
+  auto en_mons = map_opt(en_rom, [](span<const u8> en_rom) {
+    return chunks<const u8> { en_rom.begin() + en_mons_off, num_mons, 32 };
   });
 
   std::vector<u8> img_buf;
@@ -98,11 +98,11 @@ void mon_table(
 
     auto mon_name = mons[i].slice(0,7);
 
-    auto en_mon_name = map_opt(en_mons, [=](const_chunks<u8> en_mons) {
+    auto en_mon_name = map_opt(en_mons, [=](chunks<const u8> en_mons) {
       return en_mons[i].slice(0,7);
     });
     auto en_name_printer = maybe_print(
-      map_opt(en_mon_name, [](const_span<u8> en_mon_name) {
+      map_opt(en_mon_name, [](span<const u8> en_mon_name) {
         return decode_en_text_escape_html {en_mon_name};
       })
     );

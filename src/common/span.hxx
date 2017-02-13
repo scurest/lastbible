@@ -6,10 +6,6 @@
 /// A view onto a section of an array.
 template <class T>
 struct span {
-  T* begin_;
-  T* end_;
-
-  constexpr span() : begin_(nullptr), end_(nullptr) {}
   constexpr span(T* b, T* e) : begin_(b), end_(e) {}
 
   using nonconst_T = std::remove_const_t<T>;
@@ -35,7 +31,9 @@ struct span {
     return { begin_ + off, end_ };
   }
 
-  constexpr operator bool() const { return begin_ != nullptr; }
   constexpr operator span<const T>() const { return { begin_, end_ }; }
+
+private:
+  T* begin_;
+  T* end_;
 };
-template <class T> using const_span = span<const T>;

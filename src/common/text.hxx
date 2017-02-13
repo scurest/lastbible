@@ -1,6 +1,7 @@
 #pragma once
 #include <ostream>
 #include "int.hxx"
+#include "span.hxx"
 
 /// `os << encode_utf8 {c}` writes the UTF-8 byte sequence for the
 /// codepoint `c` to `os`.
@@ -45,7 +46,7 @@ constexpr usize kana_end = 0x78;
 /// `os << decode_text {text}` converts the character encoding used by
 /// Last Bible to UTF-8 and writes it to `os`.
 struct decode_text {
-  const_span<u8> text;
+  span<const u8> text;
 
   friend inline auto operator<<(
     std::ostream& os,
@@ -83,7 +84,7 @@ constexpr const char16_t en_charset[] =
 /// `os << decode_en_text_escape_html {text}` converts the text encoding
 /// for Revelations: The Demon Slayer into UTF-8 and writes it to `os`.
 struct decode_en_text_escape_html {
-  const_span<u8> text;
+  span<const u8> text;
 
   friend inline auto operator<<(
     std::ostream& os,

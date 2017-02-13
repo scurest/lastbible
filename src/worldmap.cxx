@@ -17,16 +17,16 @@
 // array of 4 indices into the tileset that will exist in VRAM.
 
 struct tile_data {
-  chunks<u8> tileset;
-  chunks<u8> block4s;
-  chunks<u8> block16s;
+  chunks<const u8> tileset;
+  chunks<const u8> block4s;
+  chunks<const u8> block16s;
 };
 
 constexpr usize world_map_off = 0x18116;
 constexpr usize world_width_tiles = 224;
-constexpr usize world_heigth_tiles = 160;
+constexpr usize world_height_tiles = 160;
 
-void draw_block4(tile_data& td, span_2d<u8> rect, u8 id) {
+void draw_block4(const tile_data& td, span_2d<u8> rect, u8 id) {
   auto block = td.block4s[id];
   // The tiles are loaded into VRAM starting at ID 0x90, so we
   // subtract this offset to get the index into the tileset.
@@ -37,7 +37,7 @@ void draw_block4(tile_data& td, span_2d<u8> rect, u8 id) {
   draw_tile(td.tileset[block[3] - off], rect.subrect(8,8,8,8));
 }
 
-void draw_block16(tile_data& td, span_2d<u8> rect, u8 id) {
+void draw_block16(const tile_data& td, span_2d<u8> rect, u8 id) {
   auto block = td.block16s[id];
   draw_block4(td, rect.subrect(0,0,16,16), block[0]);
   draw_block4(td, rect.subrect(16,0,16,16), block[1]);
@@ -45,21 +45,21 @@ void draw_block16(tile_data& td, span_2d<u8> rect, u8 id) {
   draw_block4(td, rect.subrect(16,16,16,16), block[3]);
 }
 
-auto draw_worldmap(span<u8> rom) -> vec_2d<u8> {
+auto draw_worldmap(span<const u8> rom) -> vec_2d<u8> {
   tile_data td {
     { rom.begin() + 0x2009b, 16 * 8, 16 },
     { rom.begin() + 0x6e69, 255, 4 },
     { rom.begin() + 0x1c112, 255, 4 }
   };
   auto world_width_block16s = world_width_tiles / 4;
-  auto world_heigth_block16s = world_heigth_tiles / 4;
-  auto world_area_block16s = world_width_block16s * world_heigth_block16s;
+  auto world_height_block16s = world_height_tiles / 4;
+  auto world_area_block16s = world_width_block16s * world_height_block16s;
 
   auto map_data = rom.slice_len(world_map_off, world_area_block16s);
-  vec_2d<u8> out (8*world_width_tiles, 8*world_heigth_tiles);
+  vec_2d<u8> out (8*world_width_tiles, 8*world_height_tiles);
 
   usize idx = 0;
-  for (usize y = 0; y != world_heigth_block16s; ++y) {
+  for (usize y = 0; y != world_height_block16s; ++y) {
     for (usize x = 0; x != world_width_block16s; ++x) {
       auto rect = span_2d<u8>(out).subrect(32*x,32*y,32,32);
       draw_block16(td, rect, map_data[idx++]);

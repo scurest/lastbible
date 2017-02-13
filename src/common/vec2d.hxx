@@ -8,7 +8,7 @@ struct span_2d {
   T* begin;
   usize pitch;
   usize width;
-  usize heigth;
+  usize height;
 
   using index_type = std::pair<usize, usize>;
 
@@ -21,9 +21,8 @@ struct span_2d {
     return { new_begin, pitch, w, h };
   }
 
-  constexpr operator span_2d<const T>() const { return { begin, pitch, width, heigth }; }
+  constexpr operator span_2d<const T>() const { return { begin, pitch, width, height }; }
 };
-template <class T> using const_span_2d = span_2d<const T>;
 
 /// A vector that holds a 2D array.
 template <class T>
@@ -41,5 +40,5 @@ struct vec_2d {
   }
 
   operator span_2d<T>() { return { vec.data(), width, width, height }; }
-  operator const_span_2d<T>() const { return { vec.data(), width, width, height }; }
+  operator span_2d<const T>() const { return { vec.data(), width, width, height }; }
 };

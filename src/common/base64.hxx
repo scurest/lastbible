@@ -13,7 +13,7 @@ constexpr const char base64_chars[] =
 /// `os << base64_encode{data}` writes the base64 representation
 /// of data to `os`.
 struct base64_encode {
-  const_span<u8> data;
+  span<const u8> data;
 
   friend inline auto operator<<(
     std::ostream& os,
