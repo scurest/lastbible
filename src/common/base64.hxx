@@ -1,7 +1,7 @@
 #pragma once
 #include <ostream>
-#include "int.hxx"
 #include "span.hxx"
+#include "types.hxx"
 
 // Adapted from René Nyffenegger's base64.cpp
 
@@ -18,8 +18,7 @@ struct base64_encode {
   friend inline auto operator<<(
     std::ostream& os,
     const base64_encode& x
-  ) -> std::ostream&
-  {
+  ) -> std::ostream& {
     u8 a_3[3];
     u8 a_4[4];
 

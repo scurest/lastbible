@@ -1,7 +1,7 @@
 #pragma once
 #include <type_traits>
 #include <vector>
-#include "int.hxx"
+#include "types.hxx"
 
 /// A view onto a section of an array.
 template <class T>

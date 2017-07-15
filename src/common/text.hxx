@@ -1,7 +1,7 @@
 #pragma once
 #include <ostream>
-#include "int.hxx"
 #include "span.hxx"
+#include "types.hxx"
 
 /// `os << encode_utf8 {c}` writes the UTF-8 byte sequence for the
 /// codepoint `c` to `os`.

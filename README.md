@@ -26,8 +26,7 @@ On *nix
     $ git clone https://github.com/scurest/lastbible.git
     $ cd lastbible
     $ git submodule update --init --recursive
-    $ mkdir build
-    $ cd build
+    $ mkdir build && cd build
     $ cmake ..
     $ make
 
@@ -41,4 +40,4 @@ On *nix
 ------
 ------
 
-Special thanks to bircd.org's [bgb](http://bgb.bircd.org/) ♥
+Special thanks to bircd.org's [bgb](http://bgb.bircd.org/)!

@@ -1,11 +1,11 @@
 #include <cstdio>
 #include "lodepng/lodepng.h"
 #include "common/chunks.hxx"
-#include "common/int.hxx"
 #include "common/fileio.hxx"
 #include "common/gameboy.hxx"
 #include "common/pack2bit.hxx"
 #include "common/span.hxx"
+#include "common/types.hxx"
 #include "common/vec2d.hxx"
 
 // The world map is 224x160 tiles. Instead of storing every tile index individually,
@@ -31,10 +31,10 @@ void draw_block4(const tile_data& td, span_2d<u8> rect, u8 id) {
   // The tiles are loaded into VRAM starting at ID 0x90, so we
   // subtract this offset to get the index into the tileset.
   auto off = 0x90;
-  draw_tile(td.tileset[block[0] - off], rect.subrect(0,0,8,8));
-  draw_tile(td.tileset[block[1] - off], rect.subrect(8,0,8,8));
-  draw_tile(td.tileset[block[2] - off], rect.subrect(0,8,8,8));
-  draw_tile(td.tileset[block[3] - off], rect.subrect(8,8,8,8));
+  gb::draw_tile(td.tileset[block[0] - off], rect.subrect(0,0,8,8));
+  gb::draw_tile(td.tileset[block[1] - off], rect.subrect(8,0,8,8));
+  gb::draw_tile(td.tileset[block[2] - off], rect.subrect(0,8,8,8));
+  gb::draw_tile(td.tileset[block[3] - off], rect.subrect(8,8,8,8));
 }
 
 void draw_block16(const tile_data& td, span_2d<u8> rect, u8 id) {
@@ -46,11 +46,11 @@ void draw_block16(const tile_data& td, span_2d<u8> rect, u8 id) {
 }
 
 auto draw_worldmap(span<const u8> rom) -> vec_2d<u8> {
-  tile_data td {
-    { rom.begin() + 0x2009b, 16 * 8, 16 },
-    { rom.begin() + 0x6e69, 255, 4 },
-    { rom.begin() + 0x1c112, 255, 4 }
-  };
+  chunks<const u8> tileset = { rom.begin() + 0x2009b, 16 * 8, 16 };
+  chunks<const u8> block4s = { rom.begin() + 0x6e69, 255, 4 };
+  chunks<const u8> block16s = { rom.begin() + 0x1c112, 255, 4 };
+  tile_data td { tileset, block4s, block16s };
+
   auto world_width_block16s = world_width_tiles / 4;
   auto world_height_block16s = world_height_tiles / 4;
   auto world_area_block16s = world_width_block16s * world_height_block16s;
@@ -69,16 +69,17 @@ auto draw_worldmap(span<const u8> rom) -> vec_2d<u8> {
   return out;
 }
 
-int main(int argc, char** argv) {
+auto main(int argc, zstring* argv) -> int {
   if (argc != 3) {
     fputs("Usage: worldmap /path/to/rom.gb out.png\n", stderr);
     return 1;
   }
 
-  auto rom = read_file(argv[1]);
+  auto rom = fileio::read_file(argv[1]);
   auto img = draw_worldmap(rom);
-  auto w = img.width;
-  auto h = img.height;
+
+  auto w = img.width();
+  auto h = img.height();
   auto buf = pack_2bit_buffer(std::move(img));
   lodepng::encode(argv[2], buf.data(), w, h, LCT_GREY, 2);
 }
