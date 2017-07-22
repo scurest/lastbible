@@ -8,11 +8,10 @@
 struct encode_utf8 {
   char16_t c;
 
-  friend inline auto operator<<(
+  friend auto operator<<(
     std::ostream& os,
     encode_utf8 x
-  ) -> std::ostream&
-  {
+  ) -> std::ostream& {
     char16_t c = x.c;
     if (c < 0x80u) {
       os.put(c);
@@ -48,11 +47,10 @@ constexpr usize kana_end = 0x78;
 struct decode_text {
   span<const u8> text;
 
-  friend inline auto operator<<(
+  friend auto operator<<(
     std::ostream& os,
     const decode_text& x
-  ) -> std::ostream&
-  {
+  ) -> std::ostream& {
     auto last_was_kana = false;
     for (auto b : x.text) {
       auto c = charset[b];
@@ -86,11 +84,10 @@ constexpr const char16_t en_charset[] =
 struct decode_en_text_escape_html {
   span<const u8> text;
 
-  friend inline auto operator<<(
+  friend auto operator<<(
     std::ostream& os,
     const decode_en_text_escape_html& x
-  ) -> std::ostream&
-  {
+  ) -> std::ostream& {
     for (auto b : x.text) {
       auto c = en_charset[b];
       if (c == u'&') {

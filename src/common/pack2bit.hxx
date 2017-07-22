@@ -7,7 +7,7 @@
 /// But we draw with one-pixel-one-byte (for simplicity). This function packs an image
 /// into the format for PNG. The image is consumed and its buffer is reused for the
 /// result.
-auto pack_2bit_buffer(vec_2d<u8>&& im) -> std::vector<u8> {
+inline auto pack_2bit_buffer(vec_2d<u8>&& im) -> std::vector<u8> {
   usize w = im.width();
   std::vector<u8> v(std::move(im).data());
   span<const u8> src = v;

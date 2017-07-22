@@ -15,7 +15,7 @@ constexpr const char base64_chars[] =
 struct base64_encode {
   span<const u8> data;
 
-  friend inline auto operator<<(
+  friend auto operator<<(
     std::ostream& os,
     const base64_encode& x
   ) -> std::ostream& {

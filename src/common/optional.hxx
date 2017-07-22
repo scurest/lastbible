@@ -16,11 +16,10 @@ template <class Opt>
 struct maybe_printer {
   const Opt& opt;
 
-  friend inline auto operator<<(
+  friend auto operator<<(
     std::ostream& os,
     const maybe_printer& m
-  ) -> std::ostream&
-  {
+  ) -> std::ostream& {
     if (m.opt) return os << *(m.opt);
     return os;
   }
