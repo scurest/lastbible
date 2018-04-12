@@ -9,7 +9,7 @@ Some quick code to dump data from [_女神転生外伝 Last Bible_](https://en.w
 
 * `montable rom.gb [en_rom.gbc] out.html`
 
-    Dumps an HTML table containing monster names and sprites.
+    Dumps an HTML table containing monster data.
 
     If the Game Boy Color translation is provided, the table
     will also contain English names.
@@ -40,4 +40,5 @@ On *nix
 ------
 ------
 
-Special thanks to bircd.org's [bgb](http://bgb.bircd.org/)!
+Special thanks to bircd.org's [bgb](http://bgb.bircd.org/)!\
+Special thanks to @raekuul for reverse engineering work!

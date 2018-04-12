@@ -16,7 +16,11 @@
 // The table of monster data is located at mons_off. The entries look like
 //   mon {
 //     name: u8[7],
-//     unknown: u8[25],
+//     lvl: u8,
+//     hp: u16le,
+//     mp: u8,
+//     tribe: u8,
+//     unknown: u8[20],
 //   }
 //
 // The table of monster graphic data is located at mon_gfxs_off. The entries
@@ -86,7 +90,12 @@ void mon_table(
       u8"<th>No."
       u8"<th lang=ja>名前" <<
       (en_rom ? u8"<th>Name" : "") <<
-      u8"<th>\n";
+      u8"<th>Lvl"
+      u8"<th>HP"
+      u8"<th>MP"
+      u8"<th>Tribe"
+      u8"<th>"
+      u8"\n";
 
   for (usize i = 0; i != num_mons; ++i) {
     auto mon_num = i + 1;
@@ -101,6 +110,11 @@ void mon_table(
         return decode_en_text_escape_html {en_mon_name};
       })
     );
+
+    auto mon_lvl = +mons[i][7];
+    auto mon_hp = mons[i][8] | (mons[i][9] << 8);
+    auto mon_mp = +mons[i][10];
+    auto mon_tribe = +mons[i][11];
 
     auto gfx = mon_gfxs[i];
     vec_2d<u8> img { std::move(img_buf), 0, 0 };
@@ -117,6 +131,10 @@ void mon_table(
         u8"<td>" << mon_num <<
         u8"<td lang=ja>" << decode_text {mon_name} <<
         (en_mon_name ? "<td>" : "") << en_name_printer <<
+        u8"<td>" << mon_lvl <<
+        u8"<td>" << mon_hp <<
+        u8"<td>" << mon_mp <<
+        u8"<td>" << mon_tribe <<
         u8"<td><img src='data:image/png;base64," <<
           base64_encode {png_buf} <<
         u8"'>\n";
