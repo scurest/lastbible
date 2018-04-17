@@ -1,0 +1,12 @@
+{
+  "name": "lastbible",
+  "version": "1.0.0",
+  "description": "Dump data from Last Bible (GB/GBC)",
+  "main": "src/main.js",
+  "license": "0BSD",
+  "dependencies": {
+    "minimist": "^1.2.0",
+    "readline-sync": "^1.4.9",
+    "upng-js": "^2.1.0"
+  }
+}
