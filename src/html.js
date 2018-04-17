@@ -48,19 +48,24 @@ exports.writeDb = function(rom, db) {
       s += `<td>${mon.luck} `;
 
       s += '<td>';
-      for (let j = 0; j !== mon.spells.length; j++) {
-        const effectIdx = mon.spells[j];
-        const spellName = db.effects[effectIdx].name.trim();
-        s += `<a href="#effect-${effectIdx}">${spellName}</a>`;
-        if (j >= mon.allySpellCount) {
-          s += ' (Enemy only)';
-        } else if (j >= mon.enemySpellCount) {
-          s += ' (Ally only)';
+      if (db.effects) {
+        for (let j = 0; j !== mon.spells.length; j++) {
+          const effectIdx = mon.spells[j];
+          const spellName = db.effects[effectIdx].name.trim();
+          s += `<a href="#effect-${effectIdx}">${spellName}</a>`;
+          if (j >= mon.allySpellCount) {
+            s += ' (Enemy only)';
+          } else if (j >= mon.enemySpellCount) {
+            s += ' (Ally only)';
+          }
+          s += '<br>';
         }
-        s += '<br>';
       }
 
-      s += `<td>${drawSpriteToImgTag(rom, mon.sprite)}`;
+      s += '<td>';
+      if (db.monsterSprites) {
+        s += drawSpriteToImgTag(rom, db.monsterSprites[i]);
+      }
 
       s += '\n';
     }

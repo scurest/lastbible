@@ -28,7 +28,7 @@ exports.decode_jp = function(bytes) {
 
     last_was_kana = kana_start <= bytes[i] && bytes[i] < kana_end;
   }
-  return s;
+  return s.normalize();
 }
 
 const en_charset =

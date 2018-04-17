@@ -1,150 +1,188 @@
 exports.gatherTables = function(rom) {
   return {
     'monsters': gatherMonsters(rom),
+    'monsterSprites': gatherMonsterSprites(rom),
     'items': gatherItems(rom),
     'effects': gatherEffects(rom),
   };
 };
 
-function nibbles(x) {
-  return [x & 0xf, (x >>> 4) & 0xf];
-}
 
-const monsTableOffs = {
-  'gb-jp': 0x14f0a,
-  'gbc-jp': 0x166dc,
-  'gbc-en': 0x166dc,
+const monTableDefs = {
+  'gb-jp': {
+    offset: 0x14f0a,
+    elemSize: 32,
+    numElems: 109,
+  },
+  'gbc-jp': {
+    offset: 0x166dc,
+    elemSize: 32,
+    numElems: 109,
+  },
+  'gbc-en': {
+    offset: 0x166dc,
+    elemSize: 32,
+    numElems: 109,
+  },
 };
-const numMons = 109;
-const monsTableEntrySize = 32;
-
-const monGfxTableOffs = {
-  'gbc-en': 0x44000,
-};
-const gfxTableEntrySize = 6;
 
 function gatherMonsters(rom) {
-  const tableOff = monsTableOffs[rom.version];
-  const tableSize = numMons * monsTableEntrySize;
-  const buf = rom.read(tableOff, tableSize);
+  const def = monTableDefs[rom.version];
+  if (!def) return undefined;
 
-  const gfxTableOff = monGfxTableOffs[rom.version];
-  const gfxTableSize = numMons * gfxTableEntrySize;
-  const gfxBuf = rom.read(gfxTableOff, gfxTableSize);
-
-  const table = [];
-  for (let i = 0; i !== numMons; i++) {
-    const pos = i * monsTableEntrySize;
-
+  const monTable = readArray(rom, def);
+  return monTable.map((buf, i) => {
     const num = i + 1;
 
-    const name = rom.decodeText(buf.slice(pos, pos+7));
-    const lvl = buf.readUInt8(pos+7);
-    const hp = buf.readUInt16LE(pos+8);
-    const mp = buf.readUInt8(pos+10);
-    const tribe = buf.readUInt8(pos+11);
+    const name = rom.decodeText(buf.slice(0,7));
+    const lvl = buf.readUInt8(7);
+    const hp = buf.readUInt16LE(8);
+    const mp = buf.readUInt8(10);
+    const tribe = buf.readUInt8(11);
 
     const stat = (x) => 5 + 2*x;
-    const [end, int] = nibbles(buf.readUInt8(pos+12));
+    const [end, int] = nibbles(buf.readUInt8(12));
     const endurance = stat(end);
     const intelligence = stat(int);
-    const [str, spd] = nibbles(buf.readUInt8(pos+13));
+    const [str, spd] = nibbles(buf.readUInt8(13));
     const strength = stat(str);
     const speed = stat(spd);
-    const [luk, _] = nibbles(buf.readUInt8(pos+14));
+    const [luk, _] = nibbles(buf.readUInt8(14));
     const luck = stat(luk);
 
     //const unknown = buf.readUInt8(pos+15);
     //const unknown = buf.readUInt8(pos+16);
 
-    const [allySpellCount, enemySpellCount] = nibbles(buf.readUInt8(pos+17));
+    const [allySpellCount, enemySpellCount] = nibbles(buf.readUInt8(17));
 
-    const spells = [];
-    for (let j = 0; j != 4; j++) {
-      const spell = buf.readUInt8(pos+18+j);
-      if (spell == 0xff) break;
-      spells.push(spell);
-    }
+    const spells = Array.from(buf.slice(18,22));
+    while (spells[spells.length-1] === 0xff) spells.pop();
 
-    const gfxPos = 6 * i;
-    const [tilesWidth, tilesHeight] = nibbles(gfxBuf.readUInt8(gfxPos));
-    const romBank = gfxBuf.readUInt8(gfxPos+1);
-    const addr = gfxBuf.readUInt16LE(gfxPos+2);
-    // Next two bytes are probably palette data.
-
-    const romOffset = (addr - 0x4000) + romBank * 0x4000;
-
-    const sprite = { tilesWidth, tilesHeight, romOffset };
-
-    table[i] = {
+    return {
       num, name, lvl, hp, mp, tribe,
       endurance, intelligence, strength, speed, luck,
       enemySpellCount, allySpellCount, spells,
-      sprite,
     };
-  }
-  return table;
+  });
 };
 
 
-const effectTableOffs = {
-  'gb-jp': 0x40000,
-  'gbc-jp': 0x40000,
-  'gbc-en': 0x40000,
+const monSpriteTableDefs = {
+  'gb-jp': {
+    offset: 0x14d45,
+    elemSize: 4,
+    numElems: 113,
+  },
+  'gbc-jp': {
+    offset: 0x44000,
+    elemSize: 6,
+    numElems: 113,
+  },
+  'gbc-en': {
+    offset: 0x44000,
+    elemSize: 6,
+    numElems: 113,
+  },
 };
 
-const numEffects = 90;
-const effectTableEntrySize = 14;
+function gatherMonsterSprites(rom) {
+  const def = monSpriteTableDefs[rom.version];
+  if (!def) return undefined;
 
-function gatherEffects(rom) {
-  const tableOff = effectTableOffs[rom.version];
-  const tableSize = numEffects * effectTableEntrySize;
-  const buf = rom.read(tableOff, tableSize);
-
-  const table = [];
-  for (let i = 0; i !== numEffects; i++) {
-    const pos = i * effectTableEntrySize;
-
+  const monSpriteTable = readArray(rom, def);
+  return monSpriteTable.map((buf, i) => {
     const num = i + 1;
-    const name = rom.decodeText(buf.slice(pos, pos+12));
-    const _unknown = buf.readUInt8(pos+12);
-    const cost = buf.readUInt8(pos+13);
 
-    table[i] = {
-      num, name, _unknown, cost,
-    };
-  }
-  return table;
+    const [tilesWidth, tilesHeight] = nibbles(buf.readUInt8(0));
+
+    const romBank = buf.readUInt8(1);
+    const addr = buf.readUInt16LE(2);
+    const romOffset = (addr - 0x4000) + romBank * 0x4000;
+
+    if (buf.length > 4) {
+      // GBC only, so probably palette data.
+    }
+
+    return { num, tilesWidth, tilesHeight, romOffset };
+  });
 }
 
 
-const itemTableOffs = {
-  'gb-jp': 0x405c4,
-  'gbc-jp': 0x405c4,
-  'gbc-en': 0x405c4,
+const effectTableDefs = {
+  //'gb-jp': ?,
+  //'gbc-jp': ?,
+  'gbc-en': {
+    offset: 0x40000,
+    elemSize: 14,
+    numElems: 90,
+  },
 };
 
-const numItems = 105;
-const itemTableEntrySize = 23;
+function gatherEffects(rom) {
+  const def = effectTableDefs[rom.version];
+  if (!def) return undefined;
+
+  const effectTable = readArray(rom, def);
+  return effectTable.map((buf, i) => {
+    const num = i + 1;
+    const name = rom.decodeText(buf.slice(0,12));
+    //const _unknown = buf.readUInt8(12);
+    const cost = buf.readUInt8(13);
+
+    return {
+      num, name, cost,
+    };
+  });
+}
+
+
+const itemTableDefs = {
+  //'gb-jp': ?,
+  //'gbc-jp': ?,
+  'gbc-en': {
+    offset: 0x405c4,
+    elemSize: 23,
+    numElems: 105,
+  },
+};
 
 function gatherItems(rom) {
-  const tableOff = itemTableOffs[rom.version];
-  const tableSize = numItems * itemTableEntrySize;
-  const buf = rom.read(tableOff, tableSize);
+  const def = itemTableDefs[rom.version];
+  if (!def) return undefined;
 
-  const table = [];
-  for (let i = 0; i !== numItems; i++) {
-    const pos = i * itemTableEntrySize;
-
+  const itemTable = readArray(rom, def);
+  return itemTable.map((buf, i) => {
     const num = i + 1;
-    const name = rom.decodeText(buf.slice(pos, pos+12));
+    const name = rom.decodeText(buf.slice(0,12));
     //const unknown = buf.readUInt8(pos+12);
-    let sellPrice = buf.readUInt16LE(pos+13);
+    let sellPrice = buf.readUInt16LE(13);
     let buyPrice = sellPrice + (sellPrice >>> 1); // mask this to 16 bits?
 
-    table[i] = {
+    return {
       num, name, sellPrice, buyPrice,
     };
+  });
+}
+
+
+
+
+function nibbles(x) {
+  return [x & 0xf, (x >>> 4) & 0xf];
+}
+
+function readArray(rom, def) {
+  const offset = def.offset;
+  const elemSize = def.elemSize;
+  const numElems = def.numElems;
+  const arrSize = numElems * elemSize;
+  const buf = rom.read(offset, arrSize);
+
+  const elems = []
+  let idx = 0;
+  for (let i = 0; i !== numElems; i++) {
+    elems[i] = buf.slice(idx, idx+elemSize);
+    idx += elemSize;
   }
-  return table;
+  return elems;
 }

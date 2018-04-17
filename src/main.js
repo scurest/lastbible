@@ -41,10 +41,6 @@ function main() {
   console.log(`Output Path: ${outPath}`);
   console.log(`Output Format: ${format}`);
 
-  if (rom.version !== 'gbc-en') {
-    throw 'dumping Japanese ROMs is currently broken, sorry :-(';
-  }
-
   // Open the output path for writing. If it exists and we didn't get a -y flag,
   // confirm overwriting with the user.
   let outFd;
