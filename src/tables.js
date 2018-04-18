@@ -126,11 +126,19 @@ function gatherEffects(rom) {
   return effectTable.map((buf, i) => {
     const num = i + 1;
     const name = rom.decodeText(buf.slice(0,12));
-    //const _unknown = buf.readUInt8(12);
+
+    const flags = buf.readUInt8(12);
+    const usableInField = !!(flags & (1 << 0));
+    const usableInBattle = !!(flags & (1 << 2));
+    const targetsFullStack = !!(flags & (1 << 5));
+    const targetsAll = !!(flags & (1 << 6));
+    const targetsEnemies = !!(flags & (1 << 7));
+
     const cost = buf.readUInt8(13);
 
     return {
       num, name, cost,
+      usableInField, usableInBattle, targetsFullStack, targetsAll, targetsEnemies,
     };
   });
 }

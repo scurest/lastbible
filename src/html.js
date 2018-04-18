@@ -103,13 +103,20 @@ exports.writeDb = function(rom, db) {
       '<h3 id=effects>Effects</h3>\n';
     s +=
       '<table border=1>\n' +
-      '<tr><th>No. <th>Name <th>Cost\n';
+      '<tr><th>No. <th>Name <th>Cost <th>Use in Field? <th>Use in Battle? <th>Targets Full Stack? <th>Targets All? <th>Targets Enemies?\n';
     for (let i = 0; i !== db.effects.length; i++) {
       const effect = db.effects[i];
       s += `<tr id=effect-${i}>`;
       s += `<td>${effect.num} `;
       s += `<td>${effect.name.trim()} `;
       s += `<td>${effect.cost} `;
+
+      const mark = (x) => x ? 'x' : '';
+      s += `<td>${mark(effect.usableInField)} `;
+      s += `<td>${mark(effect.usableInBattle)} `;
+      s += `<td>${mark(effect.targetsFullStack)} `;
+      s += `<td>${mark(effect.targetsAll)} `;
+      s += `<td>${mark(effect.targetsEnemies)} `;
       s += '\n';
     }
     s += '</table>\n\n';
