@@ -1,9 +1,9 @@
 exports.gatherTables = function(rom) {
   return {
-    'monsters': gatherMonsters(rom),
-    'monsterSprites': gatherMonsterSprites(rom),
-    'items': gatherItems(rom),
-    'effects': gatherEffects(rom),
+    monsters: gatherMonsters(rom),
+    monsterSprites: gatherMonsterSprites(rom),
+    items: gatherItems(rom),
+    effects: gatherEffects(rom),
   };
 };
 
@@ -162,9 +162,8 @@ function gatherItems(rom) {
   return itemTable.map((buf, i) => {
     const num = i + 1;
     const name = rom.decodeText(buf.slice(0,12));
-    //const unknown = buf.readUInt8(pos+12);
-    let sellPrice = buf.readUInt16LE(13);
-    let buyPrice = sellPrice + (sellPrice >>> 1); // mask this to 16 bits?
+    const sellPrice = buf.readUInt16LE(13);
+    const buyPrice = (sellPrice + (sellPrice >>> 1)) & 0xffff;
 
     return {
       num, name, sellPrice, buyPrice,
@@ -180,16 +179,14 @@ function nibbles(x) {
 }
 
 function readArray(rom, def) {
-  const offset = def.offset;
-  const elemSize = def.elemSize;
-  const numElems = def.numElems;
+  const { offset, elemSize, numElems } = def;
   const arrSize = numElems * elemSize;
   const buf = rom.read(offset, arrSize);
 
   const elems = []
   let idx = 0;
   for (let i = 0; i !== numElems; i++) {
-    elems[i] = buf.slice(idx, idx+elemSize);
+    elems[i] = buf.slice(idx, idx + elemSize);
     idx += elemSize;
   }
   return elems;

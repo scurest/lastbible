@@ -4,7 +4,7 @@ exports.Image = class {
   constructor(width, height) {
     this.width = width;
     this.height = height;
-    this.data = Buffer.alloc(4*width*height);
+    this.data = Buffer.alloc(4 * width * height);
     this.palette = [[224,248,208], [136,192,112], [52,104,86], [8,24,32]];
   }
 

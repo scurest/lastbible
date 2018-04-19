@@ -1,14 +1,14 @@
 const roms = require('./roms.js');
-const Image = require('./draw.js').Image;
+const { Image } = require('./draw.js');
 
 exports.writeDb = function(rom, db) {
   const lang = roms.versions[rom.version].lang;
   const title = roms.versions[rom.version].name;
-  let s =
-    '<!doctype html>\n' +
-    `<html lang=${lang}>\n` +
-    '<meta charset=utf-8>\n' +
-    `<title>Last Bible Database :: ROM: ${title}</title>\n\n`;
+  let s = '';
+  s += '<!doctype html>\n';
+  s += `<html lang=${lang}>\n`;
+  s += '<meta charset=utf-8>\n';
+  s += `<title>Last Bible Database :: ROM: ${title}</title>\n\n`;
 
   s += '<h2>ROM Info</h2>\n';
   s += '<ul>\n';
@@ -26,11 +26,9 @@ exports.writeDb = function(rom, db) {
   s += '</ul>\n';
 
   if (db.monsters) {
-    s +=
-      '<h3 id=monsters>Monsters</h3>\n';
-    s +=
-      '<table border=1>\n' +
-      '<tr><th>No. <th>Name <th>Lvl <th>HP <th>MP <th>Tribe <th>End <th>Int <th>Str <th>Spd <th>Luck <th>Spells <th>\n';
+    s += '<h3 id=monsters>Monsters</h3>\n';
+    s += '<table border=1>\n';
+    s += '<tr><th>No. <th>Name <th>Lvl <th>HP <th>MP <th>Tribe <th>End <th>Int <th>Str <th>Spd <th>Luck <th>Spells <th>\n';
     for (let i = 0; i !== db.monsters.length; i++) {
       const mon = db.monsters[i];
 
@@ -74,23 +72,16 @@ exports.writeDb = function(rom, db) {
 
 
   if (db.items) {
-    s +=
-      '<h3 id=items>Items</h3>\n';
-    s +=
-      '<table border=1>\n' +
-      '<tr><th>No. <th>Name <th>Buy Price <th>Sell Price\n';
+    s += '<h3 id=items>Items</h3>\n';
+    s += '<table border=1>\n';
+    s += '<tr><th>No. <th>Name <th>Buy Price <th>Sell Price\n';
     for (let i = 0; i !== db.items.length; i++) {
       const item = db.items[i];
       s += `<tr id=item-${i}>`;
       s += `<td>${item.num} `;
       s += `<td>${item.name.trim()} `;
-
-      if (item.sellPrice !== 0xffff) {
-        s += `<td>${item.buyPrice} `;
-        s += `<td>${item.sellPrice} `;
-      } else {
-        s += `<td>— <td>— `;
-      }
+      s += `<td>${item.buyPrice} `;
+      s += `<td>${item.sellPrice} `;
 
       s += '\n';
     }
@@ -111,7 +102,7 @@ exports.writeDb = function(rom, db) {
       s += `<td>${effect.name.trim()} `;
       s += `<td>${effect.cost} `;
 
-      const mark = (x) => x ? 'x' : '';
+      const mark = (x) => (x ? 'x' : '');
       s += `<td>${mark(effect.usableInField)} `;
       s += `<td>${mark(effect.usableInBattle)} `;
       s += `<td>${mark(effect.targetsFullStack)} `;
@@ -136,7 +127,8 @@ function drawSpriteToImgTag(rom, sprite) {
       idx += 16;
     }
   }
-  const dataUri = 'data:image/png;base64,'+Buffer.from(img.toPng()).toString('base64');
+  const png = img.toPng();
+  const dataUri = `data:image/png;base64,${Buffer.from(png).toString('base64')}`;
   const imgTag = `<img src="${dataUri}">`;
   return imgTag;
 }

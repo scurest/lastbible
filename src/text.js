@@ -1,4 +1,4 @@
-const jp_charset =
+const jpCharset =
   '０１２３４５６７８９あいうえおかきくけこさしすせそたちつてとなに' +
   'ぬねのはひふへほまみむめもやゆよらりるれろわをんぁぃぅぇぉっゃゅ' +
   'ょアイウエオカキクケコサシスセソタチツテトナニヌネノハヒフヘホマ' +
@@ -8,30 +8,30 @@ const jp_charset =
   'プペポ�����������������������������' +
   '��������������������������������';
 
-const kana_start = 0x0a;
-const kana_end = 0x78;
+const kanaStart = 0x0a;
+const kanaEnd = 0x78;
 
-exports.decode_jp = function(bytes) {
+exports.decodeJp = function(bytes) {
   let s = '';
-  let last_was_kana = false;
+  let lastWasKana = false;
   for (let i = 0; i !== bytes.length; i++) {
-    const c = jp_charset[bytes[i]];
+    const c = jpCharset[bytes[i]];
 
     // Beautify dakuten (か + ゛-> が)
-    if (last_was_kana && c === '゛') {
+    if (lastWasKana && c === '゛') {
       s += '\u3099'; // combining dakuten
-    } else if (last_was_kana && c === '゜') {
+    } else if (lastWasKana && c === '゜') {
       s += '\u309a'; // combining handakuten
     } else {
       s += c;
     }
 
-    last_was_kana = kana_start <= bytes[i] && bytes[i] < kana_end;
+    lastWasKana = kanaStart <= bytes[i] && bytes[i] < kanaEnd;
   }
   return s.normalize();
-}
+};
 
-const en_charset =
+const enCharset =
   '0123456789ABCDEFGHIJKLMNOPQRSTUV' +
   'WXYZ"#$%&\'*()+,-./:;<=>[?]?_{|}~' +
   ' abcdefghijklmnopqrstuvwxyz�����' +
@@ -41,15 +41,15 @@ const en_charset =
   '��������������������������������' +
   '��������������������������������';
 
-exports.decode_en = function(bytes) {
+exports.decodeEn = function(bytes) {
   let s = '';
   for (let i = 0; i !== bytes.length; i++) {
-    s += en_charset[bytes[i]];
+    s += enCharset[bytes[i]];
   }
   return s;
-}
+};
 
 exports.decoders = {
-  'jp': exports.decode_jp,
-  'en': exports.decode_en,
+  'jp': exports.decodeJp,
+  'en': exports.decodeEn,
 };
