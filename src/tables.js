@@ -162,11 +162,24 @@ function gatherItems(rom) {
   return itemTable.map((buf, i) => {
     const num = i + 1;
     const name = rom.decodeText(buf.slice(0,12));
+
+    const flags = buf.readUInt8(12);
+    const elCanUse = !!(flags & (1 << 0));
+    const kisheCanUse = !!(flags & (1 << 1));
+    const uranusCanUse = !!(flags & (1 << 2));
+    const usableInField = !!(flags & (1 << 6));
+    const usableInBattle = !!(flags & (1 << 7));
+
     const sellPrice = buf.readUInt16LE(13);
     const buyPrice = (sellPrice + (sellPrice >>> 1)) & 0xffff;
 
+    let effect = buf.readUInt8(22);
+    if (effect === 0xff) effect = null;
+
     return {
       num, name, sellPrice, buyPrice,
+      elCanUse, kisheCanUse, uranusCanUse, usableInField, usableInBattle,
+      effect,
     };
   });
 }

@@ -74,7 +74,11 @@ exports.writeDb = function(rom, db) {
   if (db.items) {
     s += '<h3 id=items>Items</h3>\n';
     s += '<table border=1>\n';
-    s += '<tr><th>No. <th>Name <th>Buy Price <th>Sell Price\n';
+    s +=
+      '<tr><th>No. <th>Name <th>Buy Price <th>Sell Price ' +
+      '<th>El Can Use? <th>Kishe Can Use? <th>Uranus Can Use? ' +
+      '<th>Usable in Field? <th>Usable In Battle? ' +
+      '<th>Effect\n';
     for (let i = 0; i !== db.items.length; i++) {
       const item = db.items[i];
       s += `<tr id=item-${i}>`;
@@ -82,6 +86,19 @@ exports.writeDb = function(rom, db) {
       s += `<td>${item.name.trim()} `;
       s += `<td>${item.buyPrice} `;
       s += `<td>${item.sellPrice} `;
+
+      const mark = (x) => (x ? 'x' : '');
+      s += `<td>${mark(item.elCanUse)} `;
+      s += `<td>${mark(item.kisheCanUse)} `;
+      s += `<td>${mark(item.uranusCanUse)} `;
+      s += `<td>${mark(item.usableInField)} `;
+      s += `<td>${mark(item.usableInBattle)} `;
+
+      s += '<td>';
+      if (db.effects && item.effect) {
+        const effectName = db.effects[item.effect].name.trim();
+        s += `<a href="#effect-${item.effect}">${effectName}</a>`;
+      }
 
       s += '\n';
     }
