@@ -36,8 +36,8 @@ function main() {
 
   const rom = new roms.Rom(argv._[0]);
 
-  console.log(`Cartridge: ${roms.versions[rom.version].name}`)
-  console.log(`Language: ${roms.versions[rom.version].lang}`)
+  console.log(`Cartridge: ${roms.versions[rom.version].name}`);
+  console.log(`Language: ${roms.versions[rom.version].lang}`);
   console.log(`Output Path: ${outPath}`);
   console.log(`Output Format: ${format}`);
 
@@ -53,7 +53,7 @@ function main() {
     if (argv.y === true) {
       retry = true;
     } else {
-      let resp = rl.question('Output file exists. Overwrite? (y/n) ');
+      const resp = rl.question('Output file exists. Overwrite? (y/n) ');
       retry = (resp === 'y' || resp === 'Y');
     }
     if (retry) {
@@ -77,7 +77,7 @@ function main() {
 
   const endTime = new Date();
   const elapsedSecs = (endTime - startTime) / 1000;
-  console.log(`Done in ${elapsedSecs}s.`)
+  console.log(`Done in ${elapsedSecs}s.`);
 }
 
 function showHelp() {

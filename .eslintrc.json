@@ -1,0 +1,21 @@
+{
+  "parserOptions": {
+    "ecmaVersion": 2018
+  },
+  "env": { "node": true },
+  "extends": "eslint:recommended",
+  "rules": {
+    "no-console": "off",
+    "no-fallthrough": "off",
+
+    "no-unused-vars": ["error", { "varsIgnorePattern": "[iI]gnored" }],
+
+    "semi": "error",
+    "consistent-return": "error",
+    "eqeqeq": "error",
+    "no-eval": "error",
+    "no-var": "error",
+    "prefer-const": "error",
+    "prefer-rest-params": "error"
+  }
+}

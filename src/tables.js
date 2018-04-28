@@ -47,7 +47,7 @@ function gatherMonsters(rom) {
     const [str, spd] = nibbles(buf.readUInt8(13));
     const strength = stat(str);
     const speed = stat(spd);
-    const [luk, _] = nibbles(buf.readUInt8(14));
+    const [luk, ignored] = nibbles(buf.readUInt8(14));
     const luck = stat(luk);
 
     //const unknown = buf.readUInt8(pos+15);
@@ -64,7 +64,7 @@ function gatherMonsters(rom) {
       enemySpellCount, allySpellCount, spells,
     };
   });
-};
+}
 
 
 const monSpriteTableDefs = {
@@ -196,7 +196,7 @@ function readArray(rom, def) {
   const arrSize = numElems * elemSize;
   const buf = rom.read(offset, arrSize);
 
-  const elems = []
+  const elems = [];
   let idx = 0;
   for (let i = 0; i !== numElems; i++) {
     elems[i] = buf.slice(idx, idx + elemSize);

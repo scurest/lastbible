@@ -28,4 +28,4 @@ exports.Image = class {
   toPng() {
     return upng.encode([this.data.buffer], this.width, this.height, 0);
   }
-}
+};

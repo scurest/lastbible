@@ -23,7 +23,7 @@ exports.versions = versions;
 
 
 function detectVersion(cartTitle) {
-  for (let version of Object.keys(versions)) {
+  for (const version of Object.keys(versions)) {
     if (cartTitle.equals(Buffer.from(versions[version].cartTitle, 'ascii'))) {
       return version;
     }
@@ -39,7 +39,7 @@ exports.Rom = class {
 
     // Read the title from the cartridge header and use it to detect which ROM
     // version we got.
-    let cartTitle = this.read(0x134, 16);
+    const cartTitle = this.read(0x134, 16);
     this.version = detectVersion(cartTitle);
 
     this.decodeText = text.decoders[versions[this.version].lang];

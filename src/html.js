@@ -131,7 +131,7 @@ exports.writeDb = function(rom, db) {
   }
 
   return s;
-}
+};
 
 function drawSpriteToImgTag(rom, sprite) {
   const buffer = rom.read(sprite.romOffset, 16*sprite.tilesHeight*sprite.tilesWidth);
