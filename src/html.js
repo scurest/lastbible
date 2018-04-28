@@ -28,7 +28,9 @@ exports.writeDb = function(rom, db) {
   if (db.monsters) {
     s += '<h3 id=monsters>Monsters</h3>\n';
     s += '<table border=1>\n';
-    s += '<tr><th>No. <th>Name <th>Lvl <th>HP <th>MP <th>Tribe <th>End <th>Int <th>Str <th>Spd <th>Luck <th>Spells <th>\n';
+    s +=
+      '<tr><th>No. <th>Name <th>Lvl <th>HP <th>MP <th>Tribe ' +
+      '<th>End <th>Int <th>Str <th>Spd <th>Luck <th>EXP <th>Spells <th>\n';
     for (let i = 0; i !== db.monsters.length; i++) {
       const mon = db.monsters[i];
 
@@ -44,6 +46,7 @@ exports.writeDb = function(rom, db) {
       s += `<td>${mon.strength} `;
       s += `<td>${mon.speed} `;
       s += `<td>${mon.luck} `;
+      s += `<td>${mon.exp} `;
 
       s += '<td>';
       if (db.effects) {

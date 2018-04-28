@@ -47,21 +47,28 @@ function gatherMonsters(rom) {
     const [str, spd] = nibbles(buf.readUInt8(13));
     const strength = stat(str);
     const speed = stat(spd);
-    const [luk, ignored] = nibbles(buf.readUInt8(14));
+    const [luk, unknownIgnored] = nibbles(buf.readUInt8(14));
     const luck = stat(luk);
 
-    //const unknown = buf.readUInt8(pos+15);
-    //const unknown = buf.readUInt8(pos+16);
+    //const unknown1 = buf.readUInt8(15);
+    //const unknown2 = buf.readUInt8(16);
 
     const [allySpellCount, enemySpellCount] = nibbles(buf.readUInt8(17));
 
     const spells = Array.from(buf.slice(18,22));
     while (spells[spells.length-1] === 0xff) spells.pop();
 
+    //const [allyUnkCount, enemyUnkCount] = nibbles(buf.readUInt8(22));
+    //const unk = Array.from(buf.slice(23,25));
+    //while (unk[unk.length-1] === 0xff) unk.pop();
+
+    const exp = buf.readUInt16LE(29);
+
     return {
       num, name, lvl, hp, mp, tribe,
       endurance, intelligence, strength, speed, luck,
       enemySpellCount, allySpellCount, spells,
+      exp,
     };
   });
 }
