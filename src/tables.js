@@ -180,12 +180,16 @@ function gatherItems(rom) {
     const sellPrice = buf.readUInt16LE(13);
     const buyPrice = (sellPrice + (sellPrice >>> 1)) & 0xffff;
 
+    const offense = buf.readUInt8(15);
+    const defense = buf.readUInt8(17);
+
     let effect = buf.readUInt8(22);
     if (effect === 0xff) effect = null;
 
     return {
       num, name, sellPrice, buyPrice,
       elCanUse, kisheCanUse, uranusCanUse, usableInField, usableInBattle,
+      offense, defense,
       effect,
     };
   });

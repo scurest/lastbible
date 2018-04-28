@@ -81,6 +81,7 @@ exports.writeDb = function(rom, db) {
       '<tr><th>No. <th>Name <th>Buy Price <th>Sell Price ' +
       '<th>El Can Use? <th>Kishe Can Use? <th>Uranus Can Use? ' +
       '<th>Usable in Field? <th>Usable In Battle? ' +
+      '<th>Offense <th> Defense ' +
       '<th>Effect\n';
     for (let i = 0; i !== db.items.length; i++) {
       const item = db.items[i];
@@ -96,6 +97,9 @@ exports.writeDb = function(rom, db) {
       s += `<td>${mark(item.uranusCanUse)} `;
       s += `<td>${mark(item.usableInField)} `;
       s += `<td>${mark(item.usableInBattle)} `;
+
+      s += `<td>${item.offense} `;
+      s += `<td>${item.defense} `;
 
       s += '<td>';
       if (db.effects && item.effect) {
