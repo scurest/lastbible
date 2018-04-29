@@ -8,7 +8,9 @@ exports.writeDb = function(rom, db) {
   s += '<!doctype html>\n';
   s += `<html lang=${lang}>\n`;
   s += '<meta charset=utf-8>\n';
-  s += `<title>Last Bible Database :: ROM: ${title}</title>\n\n`;
+  s += `<title>Last Bible Database :: ROM: ${title}</title>\n`;
+  s += '<style>.text-code { background:#000; color:#fff; padding:0 2px; margin:0 2px; }</style>\n';
+  s += '\n';
 
   s += '<h2>ROM Info</h2>\n';
   s += '<ul>\n';
@@ -23,6 +25,7 @@ exports.writeDb = function(rom, db) {
   if (db.monsters) s += '<li><a href="#monsters">Monsters</a>\n';
   if (db.items) s += '<li><a href="#items">Items</a>\n';
   if (db.effects) s += '<li><a href="#effects">Effects</a>\n';
+  if (db.strings) s += '<li><a href="#strings">Strings</a>\n';
   s += '</ul>\n';
 
   if (db.monsters) {
@@ -137,8 +140,22 @@ exports.writeDb = function(rom, db) {
     s += '</table>\n\n';
   }
 
+  if (db.strings) {
+    s += '<h3 id=strings>Strings</h3>\n';
+    for (const page in db.strings) {
+      s += `<h4>${page}</h4>\n`;
+      s += '<table border=1>\n';
+      for (const str of db.strings[page]) {
+        s += `<tr><td>${textToHtml(str)}\n`;
+      }
+      s += '</table>\n';
+    }
+    s += '\n';
+  }
+
   return s;
 };
+
 
 function drawSpriteToImgTag(rom, sprite) {
   const buffer = rom.read(sprite.romOffset, 16*sprite.tilesHeight*sprite.tilesWidth);
@@ -155,4 +172,47 @@ function drawSpriteToImgTag(rom, sprite) {
   const dataUri = `data:image/png;base64,${Buffer.from(png).toString('base64')}`;
   const imgTag = `<img src="${dataUri}">`;
   return imgTag;
+}
+
+
+function textToHtml(pieces) {
+  if (typeof pieces === 'string') {
+    return escapeHtml(pieces);
+  }
+  let result = '';
+  for (const piece of pieces) {
+    if (typeof piece === 'string') {
+      result += escapeHtml(piece);
+    } else {
+      if (piece.ty === 'END') {
+        result += '<span class=text-code>END</span>';
+      } else if (piece.ty === 'NEWLINE' || piece.ty === 'SCROLLUP') {
+        result += '<br>\n';
+      } else if (piece.ty === 'HERONAME') {
+        let hero;
+        if (piece.which === 0) hero = 'El';
+        else if (piece.which === 1) hero = 'Kishe';
+        else if (piece.which === 2) hero = 'Uranus';
+        else hero = `Hero ${piece.which}`;
+        result += `<span class=text-code>${hero}</span>`;
+      } else if (piece.ty === 'WAITFORBUTTON') {
+        result += ' ▾';
+      } else if (piece.ty === 'UNKNOWN') {
+        result += `<span class=text-code>0x${piece.code.toString(16)}</span>`;
+      }
+    }
+  }
+  return result;
+}
+
+const htmlEscapes = {
+  '&': '&amp;',
+  '<': '&lt;',
+  '>': '&gt;',
+};
+
+function escapeHtml(s) {
+  return String(s).replace(/[&<>]/g, function (s) {
+    return htmlEscapes[s];
+  });
 }

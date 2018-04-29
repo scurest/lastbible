@@ -4,6 +4,7 @@ exports.gatherTables = function(rom) {
     monsterSprites: gatherMonsterSprites(rom),
     items: gatherItems(rom),
     effects: gatherEffects(rom),
+    strings: gatherStrings(rom),
   };
 };
 
@@ -195,7 +196,69 @@ function gatherItems(rom) {
   });
 }
 
+const stringsTablesDefs = {
+  "page-14": {
+    //'gb-jp': ?,
+    //'gbc-jp': ?,
+    'gbc-en': {
+      offset: 14*0x4000,
+      elemSize: 2,
+      numElems: 350,
+    },
+  },
+  "page-32": {
+    //'gb-jp': ?,
+    //'gbc-jp': ?,
+    'gbc-en': {
+      offset: 32*0x4000,
+      elemSize: 2,
+      numElems: 180,
+    },
+  },
+  "page-33": {
+    //'gb-jp': ?,
+    //'gbc-jp': ?,
+    'gbc-en': {
+      offset: 33*0x4000,
+      elemSize: 2,
+      numElems: 270,
+    },
+  },
+  "page-34": {
+    //'gb-jp': ?,
+    //'gbc-jp': ?,
+    'gbc-en': {
+      offset: 34*0x4000,
+      elemSize: 2,
+      numElems: 217,
+    },
+  },
+};
 
+function gatherStrings(rom) {
+  const strings = {};
+  for (const pageName of Object.keys(stringsTablesDefs)) {
+    const def = stringsTablesDefs[pageName][rom.version];
+    if (!def) return undefined;
+
+    const page = rom.read(def.offset, 0x4000);
+    const stringsTable = readArray(rom, def);
+    strings[pageName] = stringsTable.map((buf) => {
+      const addr = buf.readUInt16LE(0);
+      const off = addr - 0x4000;
+
+      let end = off;
+      while (end < page.length && page[end] !== 0xff) {
+        end += 1;
+      }
+
+      const str = rom.decodeText(page.slice(off, end));
+
+      return str;
+    });
+  }
+  return strings;
+}
 
 
 function nibbles(x) {
