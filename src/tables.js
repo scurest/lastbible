@@ -198,8 +198,11 @@ function gatherItems(rom) {
 
 const stringsTablesDefs = {
   "page-14": {
-    //'gb-jp': ?,
-    //'gbc-jp': ?,
+    'gbc-jp': {
+      offset: 14*0x4000,
+      elemSize: 2,
+      numElems: 350,
+    },
     'gbc-en': {
       offset: 14*0x4000,
       elemSize: 2,
@@ -207,8 +210,6 @@ const stringsTablesDefs = {
     },
   },
   "page-32": {
-    //'gb-jp': ?,
-    //'gbc-jp': ?,
     'gbc-en': {
       offset: 32*0x4000,
       elemSize: 2,
@@ -216,8 +217,6 @@ const stringsTablesDefs = {
     },
   },
   "page-33": {
-    //'gb-jp': ?,
-    //'gbc-jp': ?,
     'gbc-en': {
       offset: 33*0x4000,
       elemSize: 2,
@@ -225,8 +224,6 @@ const stringsTablesDefs = {
     },
   },
   "page-34": {
-    //'gb-jp': ?,
-    //'gbc-jp': ?,
     'gbc-en': {
       offset: 34*0x4000,
       elemSize: 2,
@@ -239,7 +236,7 @@ function gatherStrings(rom) {
   const strings = {};
   for (const pageName of Object.keys(stringsTablesDefs)) {
     const def = stringsTablesDefs[pageName][rom.version];
-    if (!def) return undefined;
+    if (!def) continue;
 
     const page = rom.read(def.offset, 0x4000);
     const stringsTable = readArray(rom, def);

@@ -197,6 +197,8 @@ function textToHtml(pieces) {
         result += `<span class=text-code>${hero}</span>`;
       } else if (piece.ty === 'WAITFORBUTTON') {
         result += ' ▾';
+      } else if (piece.ty === 'YESNO') {
+        result += '<span class=text-code>Yes/No</span>';
       } else if (piece.ty === 'UNKNOWN') {
         result += `<span class=text-code>0x${piece.code.toString(16)}</span>`;
       }
